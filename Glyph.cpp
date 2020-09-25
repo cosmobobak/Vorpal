@@ -1,6 +1,5 @@
 #include <iostream>
 #include <algorithm>
-using namespace std;
 
 class Glyph
 {
@@ -30,12 +29,13 @@ class Glyph
             int x, y;
             for (x = 0; x < 3; ++x){
                 for (y = 0; y < 3; ++y){
-                    cout << node[x][y] << ' ';
+                    std::cout << node[x][y] << ' ';
                 }
-                cout << '\n';
+                std::cout << '\n';
             }
-            cout << '\n';
+            std::cout << '\n';
         }
+
         void play(int x, int y)
         {
             if (turn == 1){
@@ -46,11 +46,13 @@ class Glyph
                 turn = 1;
             }
         }
+
         void unplay(int x, int y)
         {
             node[x][y] = '.';
             if (turn == 1){turn = -1;} else {turn = 1;}
         }
+
         int evaluate()
         {
             for (int row = 0; row < 3; row++){
@@ -97,6 +99,7 @@ class Glyph
             }
             return a;
         }
+
         int max_pos(int arr[])
         {
             int max, index;
@@ -110,6 +113,7 @@ class Glyph
             }
             return index;
         }
+
         int min_pos(int arr[])
         {
             int min, index;
@@ -123,6 +127,7 @@ class Glyph
             }
             return index;
         }
+
         void engine_move()
         {
             int x, y, index;
@@ -144,21 +149,22 @@ class Glyph
             y = index%3;
             play(x, y);
         }
+
         void show_result()
         {
             int r;
             r = evaluate();
             if (r == 0)
             {
-                cout << "1/2-1/2" << '\n';
+                std::cout << "1/2-1/2" << '\n';
             }
             else if (r == 1)
             {
-                cout << "1-0" << '\n';
+                std::cout << "1-0" << '\n';
             }
             else
             {
-                cout << "0-1" << '\n';
+                std::cout << "0-1" << '\n';
             }
         }
 };
@@ -169,19 +175,13 @@ int main()
     int x, y;
     while (glyph.evaluate() == 0 && glyph.is_full() == false)
     {
-
         glyph.engine_move();
         glyph.show();
-        /*
-        if (glyph.evaluate() != 0 || glyph.is_full() == true)
-        {
-            break;
-        }
-
-        cin >> x;
-        cin >> y;
+        if (glyph.evaluate() != 0 || glyph.is_full() == true){break;}
+        std::cin >> x;
+        std::cin >> y;
         glyph.play(x, y);
-        glyph.show();*/
+        glyph.show();
     }
     glyph.show_result();
     return 0;
