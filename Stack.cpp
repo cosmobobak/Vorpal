@@ -2,53 +2,39 @@
 #include <algorithm>
 #include <cmath>
 
+class Move
+{
+public:
+    int fromSquare;
+    int toSquare;
+    Move(int x, int y)
+    { // Constructor
+        fromSquare = x;
+        toSquare = y;
+    }
+}
+
 class Stack
 {
 public:
     long node[2] = {
-        0b1,
-        0b0
-    };
+        0b1111111111111111000000000000000000000000,
+        0b0000000000000000000000001111111111111111};
     short turn = 1;
-        
+    
+    int BB_OCCUPIED()
+    {
+        return node[0] | node[1];
+    }
+
     void show() 
     {
         
     }
 
-    void play(int col)
+    void play(Move move)
     {
-        for (int row = 0; row < 6; row++)
-        {
-            if (node[row][col] != '.')
-            {
-                if (turn == 1)
-                {
-                    node[row - 1][col] = players[0];
-                    turn = -1;
-                    break;
-                }
-                else
-                {
-                    node[row - 1][col] = players[1];
-                    turn = 1;
-                    break;
-                }
-            }
-            else if (row == 5)
-            {
-                if (turn == 1)
-                {
-                    node[row][col] = players[0];
-                    turn = -1;
-                }
-                else
-                {
-                    node[row][col] = players[1];
-                    turn = 1;
-                }
-            }
-        }
+        
     }
 
     void unplay(int col)
