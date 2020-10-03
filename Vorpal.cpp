@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <vector>
 #include <string>
+#include <bitset>
 
 #define INF 10000000
 
@@ -13,6 +14,23 @@
 #define S32 signed __int32
 #define S16 signed __int16
 #define S8 signed __int8
+
+char pieces[13] = {'p', 'n', 'b', 'r', 'q', 'k', 'P', 'N', 'B', 'R', 'Q', 'K', '.'};
+std::string pieceNames[13] = {
+    "blackPawn",
+    "blackKnight",
+    "blackBishop",
+    "blackRook",
+    "blackQueen", 
+    "blackKing", 
+    "whitePawn", 
+    "whiteKnight", 
+    "whiteBishop", 
+    "whiteRook", 
+    "whiteQueen", 
+    "whiteKing", 
+    "emptySquare"
+};
 
 enum e_piece {
   KING,
@@ -52,7 +70,7 @@ public:
     int cColor;
     bool iscapture;
 
-    Move(int f = 0, int t = 0, int p = 1, bool c = 0, int cp = 13)
+    Move(int f = 0, int t = 0, int p = 1, bool c = 0, int cp = 12)
     {
         from_square = f;
         to_square = t;
@@ -60,7 +78,7 @@ public:
         color = c;
         cPiece = cp;
         cColor = !c;
-        if (cp == 13)
+        if (cp == 12)
         {
             iscapture = false;
         }
@@ -85,13 +103,13 @@ struct s_searchTracker
 
 std::ostream &operator<<(std::ostream &os, const Move &obj)
 {
-    os << "Move from " << obj.from_square << " to " << obj.to_square;
+    os << "Move " << pieceNames[obj.piece] << " C:" << obj.color << " " << obj.from_square << "->" << obj.to_square << " C?:" << obj.iscapture << " CP:" << obj.cPiece << " CC:" << obj.cColor;
     return os;
 }
 
 auto square_from_an(std::string an_square) -> int
 {
-    int a = an_square[0] - 97;
+    int a = 7 - (an_square[0] - 97);
     int b = an_square[1] - '0' - 1;
     return 63 - (a + 8 * b);
 }
@@ -99,7 +117,6 @@ auto square_from_an(std::string an_square) -> int
 class Board
 {
 public:
-    char pieces[13] = {'p', 'n', 'b', 'r', 'q', 'k', 'P', 'N', 'B', 'R', 'Q', 'K', '.'};
     U64 BB_PIECES[6] = {
         0b0000000011111111000000000000000000000000000000001111111100000000,
         0b0100001000000000000000000000000000000000000000000000000001000010,
@@ -110,15 +127,14 @@ public:
     };
     U64 BB_OCCUPIED =    0b1111111111111111000000000000000000000000000000001111111111111111;
     U64 BB_EMPTY =       0b0000000000000000111111111111111111111111111111110000000000000000;
-    
     U64 BB_COLORS[2] = {
-        0b1111111111111111000000000000000000000000000000000000000000000000,
         0b0000000000000000000000000000000000000000000000001111111111111111,
+        0b1111111111111111000000000000000000000000000000000000000000000000,
     };
     U64 MASK[64] = {};
     std::vector<Move> stack;
 
-    bool turn = 0;
+    bool turn = 1;
 
     Board()
     {
@@ -146,13 +162,19 @@ public:
         return (bb & (1LL << squareNum));
     }
 
-    auto color_at(int i) -> bool
+    auto color_at(int i) -> int
     {
-        if(get_square(BB_COLORS[0], i))
+        if (get_square(BB_COLORS[0], i))
         {
             return 0;
-        }else{
+        }
+        else if (get_square(BB_COLORS[1], i))
+        {
             return 1;
+        }
+        else
+        {
+            return 2;
         }
     }
 
@@ -166,34 +188,6 @@ public:
         c = color_at(f);
         cp = colored_piece_type_at(t);
         return Move(f, t, p, c, cp);
-    }
-
-    void make(Move *move) //adapted from chessprogrammingwiki
-    {
-        U64 fromBB = 1LL << move->from_square;
-        U64 toBB = 1LL << move->to_square;
-        U64 fromToBB = fromBB ^ toBB; // |+
-        BB_PIECES[move->piece] ^= fromToBB;          // update piece bitboard
-        BB_PIECES[move->color] ^= fromToBB;          // update white or black color bitboard
-        if (move->iscapture)
-        {
-            BB_PIECES[move->cPiece] ^= toBB; // reset the captured piece
-            BB_PIECES[move->cColor] ^= toBB; // update color bitboard by captured piece
-        }
-        BB_OCCUPIED ^= fromToBB; // update occupied ...
-        BB_EMPTY ^= fromToBB;    // ... and empty bitboard
-    }
-
-    void flip_piece(int piece_type, int squareNum) //piece_type should be in range(0, 6)
-    {
-        BB_PIECES[piece_type] = BB_PIECES[piece_type] ^ 1LL << squareNum;
-        BB_OCCUPIED = BB_OCCUPIED ^ 1LL << squareNum;
-        if(get_square(BB_COLORS[0], squareNum))
-        {
-            BB_COLORS[0] = BB_COLORS[0] ^ 1LL << squareNum;
-        }else{
-            BB_COLORS[1] = BB_COLORS[1] ^ 1LL << squareNum;
-        }
     }
 
     auto piece_type_at(int squareNum) -> int
@@ -225,9 +219,13 @@ public:
         {
             return 4;
         }
-        else
+        else if (BB_PIECES[5] & mask)
         {
             return 5;
+        }
+        else
+        {
+            return 42;
         }
     }
 
@@ -236,7 +234,7 @@ public:
         //Gets the piece type at the given square.
         U64 mask = MASK[squareNum];
         int mod;
-        if (BB_COLORS[1] & mask)
+        if (BB_COLORS[0] & mask)
         {
             mod = 0;
         }
@@ -269,9 +267,13 @@ public:
         {
             return 4 + mod;
         }
-        else
+        else if (BB_PIECES[5] & mask)
         {
             return 5 + mod;
+        }
+        else
+        {
+            return 42;
         }
     }
 
@@ -285,22 +287,46 @@ public:
         return false;
     }
 
-    void push(Move edge)
+    void make(Move *move) //adapted from chessprogrammingwiki
     {
-        auto layer = colored_piece_type_at(edge.from_square);
-
-        flip_piece(layer % 6, edge.from_square);
-        for (int i = 0; i < 6; i++)
+        std::cout << *move << std::endl;
+        U64 fromBB = 1LL << move->from_square;
+        U64 toBB = 1LL << move->to_square;
+        U64 fromToBB = fromBB ^ toBB; // |+
+        std::cout << std::bitset<64> (fromToBB) << ' ' << move->piece << std::endl;
+        BB_PIECES[move->piece % 6] ^= fromToBB;          // update piece bitboard
+        BB_COLORS[move->color] ^= fromToBB;          // update white or black color bitboard
+        if (move->iscapture)
         {
-            BB_PIECES[i] &= ~(1LL << edge.to_square);
+            BB_PIECES[move->cPiece] ^= toBB; // reset the captured piece
+            BB_PIECES[move->cColor] ^= toBB; // update color bitboard by captured piece
         }
-        flip_piece(layer % 6, edge.to_square);
+        BB_OCCUPIED ^= fromToBB; // update occupied ...
+        BB_EMPTY ^= fromToBB;    // ... and empty bitboard
     }
 
-    void play(Move edge)
+    void play(Move *edge)
     {
-        push(edge);
-        stack.push_back(edge);
+        make(edge);
+        stack.push_back(*edge);
+    }
+
+    auto pseudo_legal_moves() -> std::vector<Move>
+    {
+        U64 BB_OWN_PIECES[6];
+        for (int i = 0; i < 6; i++)
+        {
+            BB_OWN_PIECES[i] = BB_PIECES[i] & BB_COLORS[turn];
+        }
+        std::vector<Move> moveset;
+        for (int sq = 0; sq < 64; sq++)
+        {
+            if (get_square(BB_OWN_PIECES[0], sq))
+            {
+                moveset.push_back(Move(sq, sq + 8, 0, false, 12));
+            }
+        }
+        return moveset;
     }
 };
 
@@ -321,12 +347,13 @@ public:
     int contempt = 3000;
     bool oddeven = true;
     //Move best = Move();
-    int pieceValue[5] = {
+    int pieceValue[6] = {
         1000,
         3200,
         3330,
         5100,
         8800,
+        0,
     };
     int pieceSquareTable[12][64] = {
         {0, 0, 0, 0, 0, 0, 0, 0, 50, 50, 50, 50, 50, 50, 50, 50, 10, 10, 20, 30, 30, 20, 10, 10, 5, 5, 10, 25, 25, 10, 5, 5, 0, 0, 0, 20, 20, 0, 0, 0, 5, -5, -10, 0, 0, -10, -5, 5, 5, 10, 10, -20, -20, 10, 10, 5, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -375,22 +402,27 @@ public:
 
     auto principal_variation_search(int depth, int color, int a = -200000, int b = 200000) -> int
     {
+        return a;
     }
 };
 
 auto main() -> int
 {
     Vorpal engine;
+    Board init;
     Board board;
-    Move moves[] = {board.move_from_uci("e2e4"), board.move_from_uci("e7e5")};
+    Move moves[5] = {
+        board.move_from_uci("e2e4"), 
+        board.move_from_uci("e7e5"), 
+        board.move_from_uci("g1f3"), 
+        board.move_from_uci("b8c6"), 
+        board.move_from_uci("f1c4"),
+    };
     board.show();
-    std::cout << std::endl;
-    board.make(moves);
-    board.show();
-    std::cout << std::endl;
-    board.make(moves + 1);
-    board.show();
-    std::cout << board.move_from_uci("e2e4");
+    for (auto &&i : board.pseudo_legal_moves())
+    {
+        std::cout << i << std::endl;
+    }
     return 0;
 }
 
