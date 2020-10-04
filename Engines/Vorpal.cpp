@@ -21,42 +21,100 @@ std::string pieceNames[13] = {
     "blackKnight",
     "blackBishop",
     "blackRook",
-    "blackQueen", 
-    "blackKing", 
-    "whitePawn", 
-    "whiteKnight", 
-    "whiteBishop", 
-    "whiteRook", 
-    "whiteQueen", 
-    "whiteKing", 
-    "emptySquare"
+    "blackQueen",
+    "blackKing",
+    "whitePawn",
+    "whiteKnight",
+    "whiteBishop",
+    "whiteRook",
+    "whiteQueen",
+    "whiteKing",
+    "emptySquare"};
+
+enum e_piece
+{
+    KING,
+    QUEEN,
+    ROOK,
+    BISHOP,
+    KNIGHT,
+    PAWN,
+    PIECE_EMPTY
 };
 
-enum e_piece {
-  KING,
-  QUEEN,
-  ROOK,
-  BISHOP,
-  KNIGHT,
-  PAWN,
-  PIECE_EMPTY
+enum e_color
+{
+    WHITE,
+    BLACK,
+    COLOR_EMPTY
 };
 
-enum e_color {
-  WHITE,
-  BLACK,
-  COLOR_EMPTY
-};
-
-enum e_square {
-  A1, B1, C1, D1, E1, F1, G1, H1,
-  A2, B2, C2, D2, E2, F2, G2, H2,
-  A3, B3, C3, D3, E3, F3, G3, H3,
-  A4, B4, C4, D4, E4, F4, G4, H4,
-  A5, B5, C5, D5, E5, F5, G5, H5,
-  A6, B6, C6, D6, E6, F6, G6, H6,
-  A7, B7, C7, D7, E7, F7, G7, H7,
-  A8, B8, C8, D8, E8, F8, G8, H8
+enum e_square
+{
+    A1,
+    B1,
+    C1,
+    D1,
+    E1,
+    F1,
+    G1,
+    H1,
+    A2,
+    B2,
+    C2,
+    D2,
+    E2,
+    F2,
+    G2,
+    H2,
+    A3,
+    B3,
+    C3,
+    D3,
+    E3,
+    F3,
+    G3,
+    H3,
+    A4,
+    B4,
+    C4,
+    D4,
+    E4,
+    F4,
+    G4,
+    H4,
+    A5,
+    B5,
+    C5,
+    D5,
+    E5,
+    F5,
+    G5,
+    H5,
+    A6,
+    B6,
+    C6,
+    D6,
+    E6,
+    F6,
+    G6,
+    H6,
+    A7,
+    B7,
+    C7,
+    D7,
+    E7,
+    F7,
+    G7,
+    H7,
+    A8,
+    B8,
+    C8,
+    D8,
+    E8,
+    F8,
+    G8,
+    H8
 };
 
 class Move
@@ -114,6 +172,17 @@ auto square_from_an(std::string an_square) -> int
     return 63 - (a + 8 * b);
 }
 
+template <class T>
+void print_array(T arr[], int len)
+{
+    std::cout << "{ ";
+    for (size_t i = 0; i < len; i++)
+    {
+        std::cout << arr[i] << ", ";
+    }
+    std::cout << "}" << std::endl;
+}
+
 class Board
 {
 public:
@@ -125,8 +194,8 @@ public:
         0b0000100000000000000000000000000000000000000000000000000000001000,
         0b0001000000000000000000000000000000000000000000000000000000010000,
     };
-    U64 BB_OCCUPIED =    0b1111111111111111000000000000000000000000000000001111111111111111;
-    U64 BB_EMPTY =       0b0000000000000000111111111111111111111111111111110000000000000000;
+    U64 BB_OCCUPIED = 0b1111111111111111000000000000000000000000000000001111111111111111;
+    U64 BB_EMPTY = 0b0000000000000000111111111111111111111111111111110000000000000000;
     U64 BB_COLORS[2] = {
         0b0000000000000000000000000000000000000000000000001111111111111111,
         0b1111111111111111000000000000000000000000000000000000000000000000,
@@ -183,7 +252,7 @@ public:
         int f, t, p, cp;
         bool c;
         f = square_from_an(notation.substr(0, 2));
-        t = square_from_an(notation.substr(2, 4));
+        t = square_from_an(notation.substr(2, 2));
         p = colored_piece_type_at(f);
         c = color_at(f);
         cp = colored_piece_type_at(t);
@@ -293,9 +362,9 @@ public:
         U64 fromBB = 1LL << move->from_square;
         U64 toBB = 1LL << move->to_square;
         U64 fromToBB = fromBB ^ toBB; // |+
-        std::cout << std::bitset<64> (fromToBB) << ' ' << move->piece << std::endl;
-        BB_PIECES[move->piece % 6] ^= fromToBB;          // update piece bitboard
-        BB_COLORS[move->color] ^= fromToBB;          // update white or black color bitboard
+        std::cout << std::bitset<64>(fromToBB) << ' ' << move->piece << std::endl;
+        BB_PIECES[move->piece % 6] ^= fromToBB; // update piece bitboard
+        BB_COLORS[move->color] ^= fromToBB;     // update white or black color bitboard
         if (move->iscapture)
         {
             BB_PIECES[move->cPiece] ^= toBB; // reset the captured piece
@@ -411,18 +480,21 @@ auto main() -> int
     Vorpal engine;
     Board init;
     Board board;
+    int nums[] = {1, 2, 3, 4, 5};
     Move moves[5] = {
-        board.move_from_uci("e2e4"), 
-        board.move_from_uci("e7e5"), 
-        board.move_from_uci("g1f3"), 
-        board.move_from_uci("b8c6"), 
+        board.move_from_uci("e2e4"),
+        board.move_from_uci("e7e5"),
+        board.move_from_uci("g1f3"),
+        board.move_from_uci("b8c6"),
         board.move_from_uci("f1c4"),
     };
     board.show();
-    for (auto &&i : board.pseudo_legal_moves())
+    /*for (auto &&i : board.pseudo_legal_moves())
     {
         std::cout << i << std::endl;
-    }
+    }*/
+    print_array(nums, 5);
+    print_array(moves, 5);
     return 0;
 }
 
