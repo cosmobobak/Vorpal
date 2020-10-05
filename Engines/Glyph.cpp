@@ -287,9 +287,9 @@ int main()
         {
             break;
         }
-        std::cin >> i;
-        glyph.play(i);
-        glyph.show();
+        //std::cin >> i;
+        //glyph.play(i);
+        //glyph.show();
     }
     glyph.show_result();
     return 0;

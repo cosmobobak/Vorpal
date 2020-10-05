@@ -1,9 +1,6 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
-using std::cin;
-using std::cout;
-using std::endl;
 
 class Coin
 {
@@ -59,11 +56,11 @@ class Coin
             int row, col;
             for (row = 0; row < 6; ++row){
                 for (col = 0; col < 7; ++col){
-                    cout << node[row][col] << ' ';
+                    std::cout << node[row][col] << ' ';
                 }
-                cout << '\n';
+                std::cout << '\n';
             }
-            cout << '\n';
+            std::cout << '\n';
         }
 
         void play(int col) //WORKING
@@ -262,16 +259,16 @@ class Coin
             for (int col = 0; col < 7; col++){
                 if (node[0][col] == '.'){
                     play(col);
-                    scores[col] = negamax(12, turn, -2, 2);
+                    scores[col] = negamax(4, turn, -2, 2);
                     unplay(col);
                 }
             }
             for (float i = 0; i < 7; i++)
             {
                 scores[static_cast<int>(i)] -= 1-(abs(i-3)+3)/6;
-                cout << scores[static_cast<int>(i)] << " ";
+                std::cout << scores[static_cast<int>(i)] << " ";
             }
-            cout << endl;
+            std::cout << std::endl;
             play(min_pos(scores));
         }
 
@@ -281,15 +278,15 @@ class Coin
             r = evaluate();
             if (r == 0)
             {
-                cout << "1/2-1/2" << '\n';
+                std::cout << "1/2-1/2" << '\n';
             }
             else if (r > 0)
             {
-                cout << "1-0" << '\n';
+                std::cout << "1-0" << '\n';
             }
             else
             {
-                cout << "0-1" << '\n';
+                std::cout << "0-1" << '\n';
             }
         }
 
