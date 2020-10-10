@@ -2,7 +2,16 @@
 #include <algorithm>
 #include <vector>
 #include <string>
+#include <bit>
 #include <bitset>
+#include <cstdint>
+#include <initializer_list>
+
+#include "vorpal_helpers.hpp"
+#include "vorpal_bitmasks.hpp"
+
+using namespace vorpal_helpers;
+using namespace vorpal_bitmasks;
 
 #define INF 10000000
 
@@ -15,180 +24,9 @@
 #define S16 signed __int16
 #define S8 signed __int8
 
-char pieces[13] = {'p', 'n', 'b', 'r', 'q', 'k', 'P', 'N', 'B', 'R', 'Q', 'K', '.'};
-std::string pieceNames[13] = {
-    "blackPawn",
-    "blackKnight",
-    "blackBishop",
-    "blackRook",
-    "blackQueen",
-    "blackKing",
-    "whitePawn",
-    "whiteKnight",
-    "whiteBishop",
-    "whiteRook",
-    "whiteQueen",
-    "whiteKing",
-    "emptySquare"};
-
-enum e_piece
-{
-    KING,
-    QUEEN,
-    ROOK,
-    BISHOP,
-    KNIGHT,
-    PAWN,
-    PIECE_EMPTY
-};
-
-enum e_color
-{
-    WHITE,
-    BLACK,
-    COLOR_EMPTY
-};
-
-//enum e_square { A1, B1, C1, D1, E1, F1, G1, H1, A2, B2, C2, D2, E2, F2, G2, H2, A3, B3, C3, D3, E3, F3, G3, H3, A4, B4, C4, D4, E4, F4, G4, H4, A5, B5, C5, D5, E5, F5, G5, H5, A6, B6, C6, D6, E6, F6, G6, H6, A7, B7, C7, D7, E7, F7, G7, H7, A8, B8, C8, D8, E8, F8, G8, H8 };
-
-class Move
-{
-public:
-    int from_square;
-    int to_square;
-    int piece;
-    bool color;
-    int cPiece;
-    int cColor;
-    bool iscapture;
-
-    Move(int f = 0, int t = 0, int p = 1, bool c = 0, int cp = 12)
-    {
-        from_square = f;
-        to_square = t;
-        piece = p;
-        color = c;
-        cPiece = cp;
-        cColor = !c;
-        if (cp == 12)
-        {
-            iscapture = false;
-        }
-        else
-        {
-            iscapture = true;
-        }
-    }
-};
-
-struct s_searchTracker
-{
-    bool myside;
-    U8 depth;
-    int history[128][128];
-    Move killers[1024][2];
-    U64 nodes;
-    S32 movetime;
-    U64 q_nodes;
-    unsigned long starttime;
-};
-
-//FUNCTIONS AND OVERLOADS
-
-std::ostream &operator<<(std::ostream &os, const Move &obj)
-{
-    os << "Move " << pieceNames[obj.piece] << " C:" << obj.color << " " << obj.from_square << "->" << obj.to_square << " C?:" << obj.iscapture << " CP:" << obj.cPiece << " CC:" << obj.cColor;
-    return os;
-}
-
-auto square_from_an(std::string an_square) -> int
-{
-    int a = 7 - (an_square[0] - 97);
-    int b = an_square[1] - '0' - 1;
-    return 63 - (a + 8 * b);
-}
-
-template <class T>
-void print_array(T arr[], int len)
-{
-    std::cout << "{ ";
-    for (size_t i = 0; i < len; i++)
-    {
-        std::cout << arr[i] << ", ";
-    }
-    std::cout << "}" << std::endl;
-}
-
-auto move_to_string(Move move) -> std::string
-{
-    std::string builder;
-    builder.append("Move ");
-    builder.append(pieceNames[move.piece]);
-    builder.append(" C:");
-    builder.append(std::to_string(move.color));
-    builder.append(" ");
-    builder.append(std::to_string(move.from_square));
-    builder.append("->");
-    builder.append(std::to_string(move.to_square));
-    builder.append(" C?:");
-    builder.append(std::to_string(move.iscapture));
-    builder.append(" CP:");
-    builder.append(std::to_string(move.cPiece));
-    builder.append(" CC:");
-    builder.append(std::to_string(move.cColor));
-    return builder;
-}
-
-template <class T>
-auto string(std::vector<T> v) -> std::string
-{
-    std::string builder;
-    builder.append("{ ");
-    for (auto &&i : v)
-    {
-        builder.append(std::to_string(i));
-        builder.append(", ");
-    }
-    builder.append("}");
-    return builder;
-}
-
-auto string(std::vector<Move> v) -> std::string
-{
-    std::string builder;
-    builder.append("{\n");
-    for (auto &&i : v)
-    {
-        builder.append(move_to_string(i));
-        builder.append(",\n");
-    }
-    builder.append("}");
-    return builder;
-}
-
-auto string(U64 bitboard) -> std::string
-{
-    std::string builder;
-    for (int i = 0; i < 64; i++)
-    {
-        if (bitboard & (1LL << i))
-        {
-            builder.append("X");
-        }
-        else
-        {
-            builder.append(".");
-        }
-        builder.append(" ");
-        if (i % 8 == 7)
-        {
-            builder.append("\n");
-        }
-    }
-    return builder;
-}
-
 //CLASS DEFINITIONS BEGIN
+
+MaskSet M;
 
 class Board
 {
@@ -208,8 +46,6 @@ public:
         0b1111111111111111000000000000000000000000000000000000000000000000,
     };
     const U64 BB_ALL = 0xffffffffffffffff;
-    U64 MASK[64] = {};
-    U64 PAWN_ATTACKS[64][2] = {};
 
     std::vector<Move> stack;
 
@@ -217,35 +53,6 @@ public:
 
     Board()
     {
-        for (int i = 0; i < 64; i++)
-        {
-            MASK[i] = 1LL << i; //MASKS
-            if (i < 8 || i > 55)
-            {
-                PAWN_ATTACKS[i][0] = 0;
-                PAWN_ATTACKS[i][1] = 0;
-            }
-            else if (i % 8 == 7 || i % 8 == 0)
-            {
-                if (i % 8 == 7)
-                {
-                    PAWN_ATTACKS[i][0] |= 1LL << i + 7;
-                    PAWN_ATTACKS[i][1] |= 1LL << i - 9;
-                }
-                else
-                {
-                    PAWN_ATTACKS[i][0] |= 1LL << i + 9;
-                    PAWN_ATTACKS[i][1] |= 1LL << i - 7;
-                }
-            }
-            else
-            {
-                PAWN_ATTACKS[i][0] |= 1LL << i + 9;
-                PAWN_ATTACKS[i][0] |= 1LL << i + 7;
-                PAWN_ATTACKS[i][1] |= 1LL << i - 9;
-                PAWN_ATTACKS[i][1] |= 1LL << i - 7;
-            }
-        }
     }
 
     auto mod() -> int
@@ -275,7 +82,7 @@ public:
 
     auto get_square(U64 bb, int squareNum) -> bool
     {
-        return (bb & MASK[squareNum]);
+        return (bb & M.MASK[squareNum]);
     }
 
     auto color_at(int i) -> int
@@ -309,7 +116,7 @@ public:
     auto piece_type_at(int squareNum) -> int
     {
         //Gets the piece type at the given square.
-        U64 mask = MASK[squareNum];
+        U64 mask = M.MASK[squareNum];
 
         if (!(BB_OCCUPIED & mask))
         {
@@ -348,7 +155,7 @@ public:
     auto colored_piece_type_at(int squareNum) -> int
     {
         //Gets the piece type at the given square.
-        U64 mask = MASK[squareNum];
+        U64 mask = M.MASK[squareNum];
         int mod;
         if (BB_COLORS[0] & mask)
         {
@@ -426,8 +233,8 @@ public:
     void make(Move *move) //adapted from chessprogrammingwiki
     {
         std::cout << *move << std::endl;
-        U64 fromBB = MASK[move->from_square];
-        U64 toBB = MASK[move->to_square];
+        U64 fromBB = M.MASK[move->from_square];
+        U64 toBB = M.MASK[move->to_square];
         U64 fromToBB = fromBB ^ toBB; // |+
         std::cout << std::bitset<64>(fromToBB) << ' ' << move->piece << std::endl;
         BB_PIECES[move->piece % 6] ^= fromToBB; // update piece bitboard
@@ -452,33 +259,44 @@ public:
         stack.push_back(*edge);
     }
 
-    //auto _attackers_mask(bool color, int square, U64 occupied) -> U64 //this finds the pieces attacking a specific square
-    /*{
-        U64 rank_pieces = BB_RANK_MASKS[square] & occupied;
-        U64 file_pieces = BB_FILE_MASKS[square] & occupied;
-        U64 diag_pieces = BB_DIAG_MASKS[square] & occupied;
+    U64 get_bishop_moves_c(int square, U64 blockers)
+    {
+        U64 attacks = 0ULL;
 
-        U64 queens_and_rooks = self.queens | self.rooks;
-        U64 queens_and_bishops = self.queens | self.bishops;
-
-        U64 attackers = ((BB_KING_ATTACKS[square] & self.kings) |
-                         (BB_KNIGHT_ATTACKS[square] & self.knights) |
-                         (BB_RANK_ATTACKS[square][rank_pieces] & queens_and_rooks) |
-                         (BB_FILE_ATTACKS[square][file_pieces] & queens_and_rooks) |
-                         (BB_DIAG_ATTACKS[square][diag_pieces] & queens_and_bishops) |
-                         (BB_PAWN_ATTACKS[!color][square] & self.pawns));
-
-        return attackers & self.occupied_co[color];
-    }*/
-
-    //auto attacks_mask(int piece) -> U64 //unfinished, only pawns in progress
-    /*{
-        U64 mask;
-        if (piece == 0)
+        // North West
+        attacks |= RAYS[NORTH_WEST][square];
+        if (RAYS[NORTH_WEST][square] & blockers)
         {
+            int blockerIndex = bitscanForward(RAYS[NORTH_WEST][square] & blockers);
+            attacks &= ~RAYS[NORTH_WEST][blockerIndex];
         }
-                return mask;
-    }*/
+
+        // North East
+        attacks |= RAYS[NORTH_EAST][square];
+        if (RAYS[NORTH_EAST][square] & blockers)
+        {
+            int blockerIndex = bitscanForward(RAYS[NORTH_EAST][square] & blockers);
+            attacks &= ~RAYS[NORTH_EAST][blockerIndex];
+        }
+
+        // South East
+        attacks |= RAYS[SOUTH_EAST][square];
+        if (RAYS[SOUTH_EAST][square] & blockers)
+        {
+            int blockerIndex = bitscanReverse(RAYS[SOUTH_EAST][square] & blockers);
+            attacks &= ~RAYS[SOUTH_EAST][blockerIndex];
+        }
+
+        // South West
+        attacks |= RAYS[SOUTH_WEST][square];
+        if (RAYS[SOUTH_WEST][square] & blockers)
+        {
+            int blockerIndex = bitscanReverse(RAYS[SOUTH_WEST][square] & blockers);
+            attacks &= ~RAYS[SOUTH_WEST][blockerIndex];
+        }
+
+        return attacks;
+    }
 
     auto pseudo_legal_moves() -> std::vector<Move> //unfinished
     {
@@ -488,9 +306,16 @@ public:
         std::vector<Move> moveset;
         for (int sq = 0; sq < 64; sq++) //pawn-forward moves
         {
-            if (get_square(our_pawns, sq) && !get_square(targets, sq))
+            if (get_square(our_pawns, sq))
             {
-                moveset.push_back(Move(sq, sq + 8 * mod(), 0 + 6 * turn, false, 12));
+                if (!get_square(targets, sq))
+                {
+                    moveset.push_back(Move(sq, sq + 8 * mod(), 0 + 6 * turn, false, 12));
+                }
+                if (M.PAWN_ATTACKS[sq][turn] & targets)
+                {
+                    //perform some sort of check for left or right pawn take
+                }
             }
         }
         return moveset;
@@ -549,17 +374,29 @@ public:
 
     auto evaluate(int depth) -> int
     {
-        nodes++;
-        int m = node.mod();
-        int rating = 0;
-        if (node.is_checkmate())
+        nodes++;            //increment nodes evaluated
+        int m = node.mod(); //get modifier for turn, either -1 or 1
+        int rating;         //init rating
+
+        if (node.is_checkmate()) //if checkmate, multiply by the depth to incentivise quicker mating
         {
             return 1000000000 * (depth + 1) * m;
         }
-        if (node.can_claim_fifty_moves())
+        if (node.can_claim_fifty_moves()) //treat draws as initialising rating with the contempt factor
         {
             rating = -contempt * m;
         }
+
+        rating += __builtin_popcount(node.BB_PIECES[0] & node.BB_COLORS[0]);
+        rating += __builtin_popcount(node.BB_PIECES[1] & node.BB_COLORS[0]);
+        rating += __builtin_popcount(node.BB_PIECES[2] & node.BB_COLORS[0]);
+        rating += __builtin_popcount(node.BB_PIECES[3] & node.BB_COLORS[0]);
+        rating += __builtin_popcount(node.BB_PIECES[4] & node.BB_COLORS[0]);
+        rating -= __builtin_popcount(node.BB_PIECES[0] & node.BB_COLORS[1]);
+        rating -= __builtin_popcount(node.BB_PIECES[1] & node.BB_COLORS[1]);
+        rating -= __builtin_popcount(node.BB_PIECES[2] & node.BB_COLORS[1]);
+        rating -= __builtin_popcount(node.BB_PIECES[3] & node.BB_COLORS[1]);
+        rating -= __builtin_popcount(node.BB_PIECES[4] & node.BB_COLORS[1]);
 
         return rating;
     }
@@ -586,10 +423,13 @@ public:
 
 auto main() -> int
 {
-    //Vorpal engine;
-    Board init;
-    Board board;
-
+    Vorpal engine;
+    Move arr[] = {engine.node.move_from_uci("e2e7")};
+    engine.node.show();
+    std::cout << engine.evaluate(1) << std::endl;
+    engine.node.play(arr);
+    engine.node.show();
+    std::cout << engine.evaluate(1) << std::endl;
     return 0;
 }
 
