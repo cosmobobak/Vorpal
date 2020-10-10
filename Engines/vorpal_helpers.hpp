@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include "vorpal_move.hpp"
 
 #define INF 10000000
 
@@ -49,44 +50,12 @@ namespace vorpal_helpers
         COLOR_EMPTY
     };
 
-    //enum e_square { A1, B1, C1, D1, E1, F1, G1, H1, A2, B2, C2, D2, E2, F2, G2, H2, A3, B3, C3, D3, E3, F3, G3, H3, A4, B4, C4, D4, E4, F4, G4, H4, A5, B5, C5, D5, E5, F5, G5, H5, A6, B6, C6, D6, E6, F6, G6, H6, A7, B7, C7, D7, E7, F7, G7, H7, A8, B8, C8, D8, E8, F8, G8, H8 };
-
-    class Move
-    {
-    public:
-        int from_square;
-        int to_square;
-        int piece;
-        bool color;
-        int cPiece;
-        int cColor;
-        bool iscapture;
-
-        Move(int f = 0, int t = 0, int p = 1, bool c = 0, int cp = 12)
-        {
-            from_square = f;
-            to_square = t;
-            piece = p;
-            color = c;
-            cPiece = cp;
-            cColor = !c;
-            if (cp == 12)
-            {
-                iscapture = false;
-            }
-            else
-            {
-                iscapture = true;
-            }
-        }
-    };
-
     struct s_searchTracker
     {
         bool myside;
         U8 depth;
         int history[128][128];
-        Move killers[1024][2];
+        vorpal_move::Move killers[1024][2];
         U64 nodes;
         S32 movetime;
         U64 q_nodes;
@@ -95,7 +64,7 @@ namespace vorpal_helpers
 
     //FUNCTIONS AND OVERLOADS
 
-    std::ostream &operator<<(std::ostream &os, const Move &obj)
+    std::ostream &operator<<(std::ostream &os, const vorpal_move::Move &obj)
     {
         os << "Move " << pieceNames[obj.piece] << " C:" << obj.color << " " << obj.from_square << "->" << obj.to_square << " C?:" << obj.iscapture << " CP:" << obj.cPiece << " CC:" << obj.cColor;
         return os;
@@ -119,7 +88,7 @@ namespace vorpal_helpers
         std::cout << "}" << std::endl;
     }
 
-    auto move_to_string(Move move) -> std::string
+    auto move_to_string(vorpal_move::Move move) -> std::string
     {
         std::string builder;
         builder.append("Move ");
@@ -153,7 +122,7 @@ namespace vorpal_helpers
         return builder;
     }
 
-    auto string(std::vector<Move> v) -> std::string
+    auto string(std::vector<vorpal_move::Move> v) -> std::string
     {
         std::string builder;
         builder.append("{\n");
