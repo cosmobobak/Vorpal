@@ -1,16 +1,16 @@
 #include <bitset>
 #include <vector>
-#include "vorpal_helpers.hpp" // vorpal_move is included in here nested-ly so don't worry
+
 #include "vorpal_bitmasks.hpp"
 
+#define U64 unsigned long long
+
 using namespace vorpal_helpers;
-using namespace vorpal_move;
-using namespace vorpal_bitmasks;
+
+vorpal_bitmasks::MaskSet M;
 
 namespace vorpal_node
 {
-    MaskSet M;
-
     class Board
     {
     public:
@@ -30,13 +30,9 @@ namespace vorpal_node
         };
         const U64 BB_ALL = 0xffffffffffffffff;
 
-        std::vector<Move> stack;
+        std::vector<vorpal_move::Move> stack;
 
         bool turn = 1;
-
-        Board()
-        {
-        }
 
         auto mod() -> int
         {
@@ -54,7 +50,7 @@ namespace vorpal_node
         {
             for (int i = 0; i < 64; i++)
             {
-                std::cout << pieces[colored_piece_type_at(i)];
+                std::cout << vorpal_helpers::pieces[colored_piece_type_at(i)];
                 std::cout << " ";
                 if (i % 8 == 7)
                 {
@@ -84,16 +80,16 @@ namespace vorpal_node
             }
         }
 
-        auto move_from_uci(std::string notation) -> Move
+        auto move_from_uci(std::string notation) -> vorpal_move::Move
         {
             int f, t, p, cp;
             bool c;
-            f = square_from_an(notation.substr(0, 2));
-            t = square_from_an(notation.substr(2, 2));
+            f = vorpal_helpers::square_from_an(notation.substr(0, 2));
+            t = vorpal_helpers::square_from_an(notation.substr(2, 2));
             p = colored_piece_type_at(f);
             c = color_at(f);
             cp = colored_piece_type_at(t);
-            return Move(f, t, p, c, cp);
+            return vorpal_move::Move(f, t, p, c, cp);
         }
 
         auto piece_type_at(int squareNum) -> int
@@ -183,27 +179,27 @@ namespace vorpal_node
             }
         }
 
-        auto is_checkmate() -> bool //unfinished
+        auto is_checkmate() -> bool  // TODO
         {
             return false;
         }
 
-        auto can_claim_fifty_moves() -> bool //unfinished
+        auto can_claim_fifty_moves() -> bool  // TODO
         {
             return false;
         }
 
-        auto is_insufficient_material() -> bool //unfinished
+        auto is_insufficient_material() -> bool  // TODO
         {
             return false;
         }
 
-        auto is_threefold() -> bool //unfinished
+        auto is_threefold() -> bool  // TODO
         {
             return false;
         }
 
-        auto is_draw() -> bool //unfinished
+        auto is_draw() -> bool  // TODO
         {
             return can_claim_fifty_moves() || is_insufficient_material() || is_threefold();
         }
@@ -213,7 +209,7 @@ namespace vorpal_node
             return is_checkmate() || is_draw();
         }
 
-        void make(Move *move) //adapted from chessprogrammingwiki
+        void make(vorpal_move::Move *move) //adapted from chessprogrammingwiki
         {
             std::cout << *move << std::endl;
             U64 fromBB = M.MASK[move->from_square];
@@ -231,69 +227,137 @@ namespace vorpal_node
             BB_EMPTY ^= fromToBB;    // ... and empty bitboard
         }
 
-        void unmake(Move *move)
+        void unmake(vorpal_move::Move *move)
         {
             //TODO
         }
 
-        void play(Move *edge)
+        void play(vorpal_move::Move *edge)
         {
             make(edge);
             stack.push_back(*edge);
         }
 
-        /*U64 get_bishop_moves_c(int square, U64 blockers)
-    {
-        U64 attacks = 0ULL;
-
-        // North West
-        attacks |= RAYS[NORTH_WEST][square];
-        if (RAYS[NORTH_WEST][square] & blockers)
+        /*auto slider_blockers(int square) -> U64  // TODO
         {
-            int blockerIndex = bitscanForward(RAYS[NORTH_WEST][square] & blockers);
-            attacks &= ~RAYS[NORTH_WEST][blockerIndex];
+            U64 rooks_and_queens = BB_PIECES[ROOK] | BB_PIECES[QUEEN];
+            U64 bishops_and_queens = BB_PIECES[BISHOP] | BB_PIECES[QUEEN];
+
+            U64 snipers = ((BB_RANK_ATTACKS[square][0] & rooks_and_queens) |
+                           (BB_FILE_ATTACKS[square][0] & rooks_and_queens) |
+                           (BB_DIAG_ATTACKS[square][0] & bishops_and_queens));
+
+            U64 blockers = 0;
+
+            //for sniper in scan_reversed(snipers & self.occupied_co[not self.turn])
+            //    b = between(king, sniper) & self.occupied;
+
+            //    # Add to blockers if exactly one piece in-between.
+            //    if b and BB_SQUARES[msb(b)] == b
+            //        blockers |= b;
+
+            return blockers & self.occupied_co[self.turn];
+        }*/
+
+        auto get_bishop_moves_c(int square, U64 blockers) -> U64
+        {
+            U64 attacks = 0ULL;
+
+            // North West
+            attacks |= M.RAYS[vorpal_helpers::NORTH_WEST][square];
+            if (M.RAYS[vorpal_helpers::NORTH_WEST][square] & blockers)
+            {
+                int blockerIndex = vorpal_helpers::bitscan_forward(M.RAYS[vorpal_helpers::NORTH_WEST][square] & blockers);
+                attacks &= ~M.RAYS[vorpal_helpers::NORTH_WEST][blockerIndex];
+            }
+
+            // North East
+            attacks |= M.RAYS[vorpal_helpers::NORTH_EAST][square];
+            if (M.RAYS[vorpal_helpers::NORTH_EAST][square] & blockers)
+            {
+                int blockerIndex = vorpal_helpers::bitscan_forward(M.RAYS[vorpal_helpers::NORTH_EAST][square] & blockers);
+                attacks &= ~M.RAYS[vorpal_helpers::NORTH_EAST][blockerIndex];
+            }
+
+            // South East
+            attacks |= M.RAYS[vorpal_helpers::SOUTH_EAST][square];
+            if (M.RAYS[vorpal_helpers::SOUTH_EAST][square] & blockers)
+            {
+                int blockerIndex = vorpal_helpers::bitscan_reverse(M.RAYS[vorpal_helpers::SOUTH_EAST][square] & blockers);
+                attacks &= ~M.RAYS[vorpal_helpers::SOUTH_EAST][blockerIndex];
+            }
+
+            // South West
+            attacks |= M.RAYS[vorpal_helpers::SOUTH_WEST][square];
+            if (M.RAYS[vorpal_helpers::SOUTH_WEST][square] & blockers)
+            {
+                int blockerIndex = vorpal_helpers::bitscan_reverse(M.RAYS[vorpal_helpers::SOUTH_WEST][square] & blockers);
+                attacks &= ~M.RAYS[vorpal_helpers::SOUTH_WEST][blockerIndex];
+            }
+
+            return attacks;
         }
 
-        // North East
-        attacks |= RAYS[NORTH_EAST][square];
-        if (RAYS[NORTH_EAST][square] & blockers)
+        auto diag_blocked_rays(int square, U64 blockers) -> U64 // TODO
         {
-            int blockerIndex = bitscanForward(RAYS[NORTH_EAST][square] & blockers);
-            attacks &= ~RAYS[NORTH_EAST][blockerIndex];
+            return 0;
         }
 
-        // South East
-        attacks |= RAYS[SOUTH_EAST][square];
-        if (RAYS[SOUTH_EAST][square] & blockers)
+        auto rank_blocked_rays(int square, U64 blockers) -> U64 // TODO
         {
-            int blockerIndex = bitscanReverse(RAYS[SOUTH_EAST][square] & blockers);
-            attacks &= ~RAYS[SOUTH_EAST][blockerIndex];
+            return 0;
         }
 
-        // South West
-        attacks |= RAYS[SOUTH_WEST][square];
-        if (RAYS[SOUTH_WEST][square] & blockers)
+        auto file_blocked_rays(int square, U64 blockers) -> U64 // TODO
         {
-            int blockerIndex = bitscanReverse(RAYS[SOUTH_WEST][square] & blockers);
-            attacks &= ~RAYS[SOUTH_WEST][blockerIndex];
+            return 0;
         }
 
-        return attacks;
-    }*/
+        auto attacks_mask(int square, U64 blockers) -> U64 // TODO
+        {
+            U64 bb_square = M.MASK[square];
 
-        auto pseudo_legal_moves() -> std::vector<Move> //unfinished
+            if(bb_square & BB_PIECES[PAWN]){
+                bool color = (bool)(bb_square & BB_COLORS[WHITE]);
+                return M.PAWN_ATTACKS[color][square];
+            }
+            else if (bb_square & BB_PIECES[KNIGHT])
+            {
+                return M.union_bitmask(KNIGHT, square);
+            }
+            else if (bb_square & BB_PIECES[KING])
+            {
+                return M.union_bitmask(KING, square);
+            }
+            else
+            {
+                U64 attacks = 0;
+                if (bb_square & BB_PIECES[BISHOP] || bb_square & BB_PIECES[QUEEN])
+                {
+                    attacks = diag_blocked_rays(square, blockers);
+                }
+                if (bb_square & BB_PIECES[ROOK] || bb_square & BB_PIECES[QUEEN])
+                {
+                    attacks |= (rank_blocked_rays(square, blockers) |
+                                file_blocked_rays(square, blockers));
+                }
+                return attacks;
+            }
+        }
+
+        auto pseudo_legal_moves() -> std::vector<vorpal_move::Move>  // TODO
         {
             U64 our_pieces = BB_COLORS[turn];
             U64 our_pawns = BB_PIECES[0] & our_pieces;
             U64 targets = BB_COLORS[(turn + 1) % 2];
-            std::vector<Move> moveset;
+            std::vector<vorpal_move::Move> moveset;
             for (int sq = 0; sq < 64; sq++) //pawn-forward moves
             {
                 if (get_square(our_pawns, sq))
                 {
                     if (!get_square(targets, sq))
                     {
-                        moveset.push_back(Move(sq, sq + 8 * mod(), 0 + 6 * turn, false, 12));
+                        moveset.push_back(vorpal_move::Move(sq, sq + 8 * mod(), 0 + 6 * turn, false, 12));
                     }
                     if (M.PAWN_ATTACKS[sq][turn] & targets)
                     {
@@ -304,7 +368,7 @@ namespace vorpal_node
             return moveset;
         }
 
-        auto legal_moves() -> std::vector<Move> //unfinished
+        auto legal_moves() -> std::vector<vorpal_move::Move>  // TODO
         {
             return pseudo_legal_moves();
         }

@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include <cassert>
+
 #include "vorpal_move.hpp"
 
 #define INF 10000000
@@ -34,20 +36,32 @@ namespace vorpal_helpers
 
     enum e_piece
     {
-        KING,
-        QUEEN,
-        ROOK,
-        BISHOP,
-        KNIGHT,
         PAWN,
-        PIECE_EMPTY
+        KNIGHT,
+        BISHOP,
+        ROOK,
+        QUEEN,
+        KING,
+        NO_PIECE
+    };
+
+    enum e_dirs
+    {
+        SOUTH_EAST,
+        SOUTH,
+        SOUTH_WEST,
+        EAST,
+        NORTH_WEST,
+        NORTH,
+        NORTH_EAST,
+        WEST
     };
 
     enum e_color
     {
         WHITE,
         BLACK,
-        COLOR_EMPTY
+        NO_COLOR
     };
 
     struct s_searchTracker
@@ -156,4 +170,223 @@ namespace vorpal_helpers
         }
         return builder;
     }
+
+    auto bitscan_forward(U64 bitboard) -> int // this function is just magic copied from here https://www.chessprogramming.org/BitScan#Divide_and_Conquer
+    {
+        unsigned int lsb;
+        assert(bitboard != 0);
+        bitboard &= -bitboard; // LS1B-Isolation
+        lsb = (unsigned)bitboard | (unsigned)(bitboard >> 32);
+        return (((((((((((unsigned)(bitboard >> 32) != 0) * 2) + ((lsb & 0xffff0000) != 0)) * 2) + ((lsb & 0xff00ff00) != 0)) * 2) + ((lsb & 0xf0f0f0f0) != 0)) * 2) + ((lsb & 0xcccccccc) != 0)) * 2) + ((lsb & 0xaaaaaaaa) != 0);
+    }
+
+    int bitscan_reverse(U64 bitboard) // this function is just magic copied from here https://www.chessprogramming.org/BitScan#Double_conversion
+    {
+        union
+        {
+            double d;
+            struct
+            {
+                unsigned int mantissal : 32;
+                unsigned int mantissah : 20;
+                unsigned int exponent : 11;
+                unsigned int sign : 1;
+            };
+        } ud;
+        ud.d = (double)(bitboard & ~(bitboard >> 32)); // avoid rounding error
+        return ud.exponent - 1023;
+    }
+
+    auto row(int index) -> int
+    {
+        return index / 8;
+    }
+
+    auto col(int index) -> int
+    {
+        return index % 8;
+    }
+
+    auto index(int row, int col) -> int
+    {
+        if (row > 7 || col > 7 || row < 0 || col < 0)
+        {
+            return 64;
+        }
+        return row * 8 + col;
+    }
+
+    auto set_bit(int index, U64 bitboard) -> U64
+    {
+        //return bitboard | M.MASK[index];
+        return bitboard | 1LL << index;
+    }
+
+    auto row_bitmask_generator(int row) -> U64
+    {
+        U64 out = 0;
+        for (int i = 0; i < 8; i++)
+        {
+            out = set_bit(index(row, i), out);
+        }
+        return out;
+    }
+
+    auto col_bitmask_generator(int col) -> U64
+    {
+        U64 out = 0;
+        for (int i = 0; i < 8; i++)
+        {
+            out = set_bit(index(i, col), out);
+        }
+        return out;
+    }
+
+    auto ray_bitmask_generator(int square, int dir) -> U64 // slow as hell
+    {
+        int r = row(square);
+        int c = col(square);
+        int i = 1;
+        U64 outputMask = 0;
+        if (dir == SOUTH_EAST)
+        {
+            while (index(r + i, c + i) >= 0 && index(r + i, c + i) <= 63)
+            {
+                outputMask = set_bit(index(r + i, c + i), outputMask);
+                i++;
+            }
+        }
+        else if (dir == NORTH_WEST)
+        {
+            while (index(r - i, c - i) >= 0 && index(r - i, c - i) <= 63)
+            {
+                outputMask = set_bit(index(r - i, c - i), outputMask);
+                i++;
+            }
+        }
+        else if (dir == SOUTH_WEST)
+        {
+            while (index(r + i, c - i) >= 0 && index(r + i, c - i) <= 63)
+            {
+                outputMask = set_bit(index(r + i, c - i), outputMask);
+                i++;
+            }
+        }
+        else if (dir == NORTH_EAST)
+        {
+            while (index(r - i, c + i) >= 0 && index(r - i, c + i) <= 63)
+            {
+                outputMask = set_bit(index(r - i, c + i), outputMask);
+                i++;
+            }
+        }
+        else if (dir == NORTH)
+        {
+            while (index(r - i, c) >= 0 && index(r - i, c) <= 63)
+            {
+                outputMask = set_bit(index(r - i, c), outputMask);
+                i++;
+            }
+        }
+        else if (dir == SOUTH)
+        {
+            while (index(r + i, c) >= 0 && index(r + i, c) <= 63)
+            {
+                outputMask = set_bit(index(r + i, c), outputMask);
+                i++;
+            }
+        }
+        else if (dir == WEST)
+        {
+            while (index(r, c - i) >= 0 && index(r, c - i) <= 63)
+            {
+                outputMask = set_bit(index(r, c - i), outputMask);
+                i++;
+            }
+        }
+        else if (dir == EAST)
+        {
+            while (index(r, c + i) >= 0 && index(r, c + i) <= 63)
+            {
+                outputMask = set_bit(index(r, c + i), outputMask);
+                i++;
+            }
+        }
+        else
+        {
+            std::cout << "error in ray_bitmask_generator";
+        }
+
+        return outputMask;
+    }
+
+    auto knight_move_generator(int square, int dir) -> U64 // slow as hell
+    {
+        int offsets[] = {17, 15, 10, 6, -17, -15, -10, -6};
+        int r = row(square);
+        int c = col(square);
+        U64 out = 0;
+        if (square + offsets[dir] >= 0 && square + offsets[dir] <= 63)
+        {
+            out = 1LL << (square + offsets[dir]);
+        }
+        else
+        {
+            return 0;
+        }
+        
+        if (r == 0 || r == 1)
+        {
+            out &= ~(row_bitmask_generator(7) | row_bitmask_generator(6));
+        }
+        else if (r == 7 || r == 6)
+        {
+            out &= ~(row_bitmask_generator(0) | row_bitmask_generator(1));
+        }
+        if (c == 0 || c == 1)
+        {
+            out &= ~(col_bitmask_generator(7) | col_bitmask_generator(6));
+        }
+        else if (c == 7 || c == 6)
+        {
+            out &= ~(col_bitmask_generator(0) | col_bitmask_generator(1));
+        }
+        return out;
+    }
+
+    auto king_move_generator(int square, int dir) -> U64 // slow as hell
+    {
+        int offsets[] = {9, 8, 7, 1, -9, -8, -7, -1};
+        int r = row(square);
+        int c = col(square);
+        U64 out = 0;
+        if (square + offsets[dir] >= 0 && square + offsets[dir] <= 63)
+        {
+            out = 1LL << (square + offsets[dir]);
+        }
+        else
+        {
+            return 0;
+        }
+
+        if (r == 0 || r == 1)
+        {
+            out &= ~(row_bitmask_generator(7) | row_bitmask_generator(6));
+        }
+        else if (r == 7 || r == 6)
+        {
+            out &= ~(row_bitmask_generator(0) | row_bitmask_generator(1));
+        }
+        if (c == 0 || c == 1)
+        {
+            out &= ~(col_bitmask_generator(7) | col_bitmask_generator(6));
+        }
+        else if (c == 7 || c == 6)
+        {
+            out &= ~(col_bitmask_generator(0) | col_bitmask_generator(1));
+        }
+        return out;
+    }
+
+    
 }; // namespace vorpal_helpers

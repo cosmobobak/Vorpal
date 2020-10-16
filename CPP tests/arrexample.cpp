@@ -1,12 +1,14 @@
 #include <iostream>
-
-auto average(float x, float y, float z) -> float
-{
-    return (x + y + z) / 3;
-}
+#include <vector>
 
 auto main() -> int
 {
-    std::cout << average(3, 4, 5);
+    int array[] = {0, 1, 2, 3, 4};
+
+    for (int i = 0; i < 5; i++)
+    {
+        std::cout << *(array + i) << '\n';
+    }
+    
     return 0;
 }

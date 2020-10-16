@@ -5,20 +5,11 @@
 #include <cstdint>
 #include <initializer_list>
 
-#include "vorpal_node.hpp" 
+#include "vorpal_node.hpp" //daisy-chaining
 
 using namespace vorpal_node;
 
 #define INF 10000000
-
-#define U64 unsigned long long
-#define U32 unsigned __int32
-#define U16 unsigned __int16
-#define U8 unsigned __int8
-#define S64 signed __int64
-#define S32 signed __int32
-#define S16 signed __int16
-#define S8 signed __int8
 
 //CLASS DEFINITIONS BEGIN
 
@@ -71,27 +62,27 @@ public:
     {
         nodes++;            //increment nodes evaluated
         int m = node.mod(); //get modifier for turn, either -1 or 1
-        int rating;         //init rating
+        int rating = 0;     //init rating
 
-        if (node.is_checkmate()) //if checkmate, multiply by the depth to incentivise quicker mating
-        {
-            return 1000000000 * (depth + 1) * m;
-        }
-        if (node.can_claim_fifty_moves()) //treat draws as initialising rating with the contempt factor
-        {
-            rating = -contempt * m;
-        }
+        //if (node.is_checkmate()) //if checkmate, multiply by the depth to incentivise quicker mating
+        //{
+        //    return 1000000000 * (depth + 1) * m;
+        //}
+        //if (node.can_claim_fifty_moves()) //treat draws as initialising rating with the contempt factor
+        //{
+        //    rating = -contempt * m;
+        //}
 
-        rating += __builtin_popcount(node.BB_PIECES[0] & node.BB_COLORS[0]);
-        rating += __builtin_popcount(node.BB_PIECES[1] & node.BB_COLORS[0]);
-        rating += __builtin_popcount(node.BB_PIECES[2] & node.BB_COLORS[0]);
-        rating += __builtin_popcount(node.BB_PIECES[3] & node.BB_COLORS[0]);
-        rating += __builtin_popcount(node.BB_PIECES[4] & node.BB_COLORS[0]);
-        rating -= __builtin_popcount(node.BB_PIECES[0] & node.BB_COLORS[1]);
-        rating -= __builtin_popcount(node.BB_PIECES[1] & node.BB_COLORS[1]);
-        rating -= __builtin_popcount(node.BB_PIECES[2] & node.BB_COLORS[1]);
-        rating -= __builtin_popcount(node.BB_PIECES[3] & node.BB_COLORS[1]);
-        rating -= __builtin_popcount(node.BB_PIECES[4] & node.BB_COLORS[1]);
+        rating += std::bitset<64>(node.BB_PIECES[0] & node.BB_COLORS[1]).count();
+        rating += std::bitset<64>(node.BB_PIECES[1] & node.BB_COLORS[1]).count();
+        rating += std::bitset<64>(node.BB_PIECES[2] & node.BB_COLORS[1]).count();
+        rating += std::bitset<64>(node.BB_PIECES[3] & node.BB_COLORS[1]).count();
+        rating += std::bitset<64>(node.BB_PIECES[4] & node.BB_COLORS[1]).count();
+        rating -= std::bitset<64>(node.BB_PIECES[0] & node.BB_COLORS[0]).count();
+        rating -= std::bitset<64>(node.BB_PIECES[1] & node.BB_COLORS[0]).count();
+        rating -= std::bitset<64>(node.BB_PIECES[2] & node.BB_COLORS[0]).count();
+        rating -= std::bitset<64>(node.BB_PIECES[3] & node.BB_COLORS[0]).count();
+        rating -= std::bitset<64>(node.BB_PIECES[4] & node.BB_COLORS[0]).count();
 
         return rating;
     }
@@ -118,13 +109,7 @@ public:
 
 auto main() -> int
 {
-    Vorpal engine;
-    Move arr[] = {engine.node.move_from_uci("e2e7")};
-    engine.node.show();
-    std::cout << engine.evaluate(1) << std::endl;
-    engine.node.play(arr);
-    engine.node.show();
-    std::cout << engine.evaluate(1) << std::endl;
+    std::cout << string(M.RAYS[SOUTH][4]);
     return 0;
 }
 
