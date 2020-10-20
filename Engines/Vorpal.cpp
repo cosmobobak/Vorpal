@@ -109,7 +109,7 @@ public:
 
 auto main() -> int
 {
-    std::cout << string(M.RAYS[SOUTH][4]);
+    std::cout << string(M.union_bitmask(vorpal_helpers::KNIGHT, 12));
     return 0;
 }
 

@@ -78,19 +78,27 @@ namespace vorpal_bitmasks
 
         auto union_bitmask(int piece, int index) -> U64
         {
-            if (piece == vorpal_helpers::KNIGHT)
+            switch (piece)
             {
+            case vorpal_helpers::KNIGHT:
                 return KNIGHT_ATTACKS[0][index] | KNIGHT_ATTACKS[1][index] | KNIGHT_ATTACKS[2][index] | KNIGHT_ATTACKS[3][index] | KNIGHT_ATTACKS[4][index] | KNIGHT_ATTACKS[5][index] | KNIGHT_ATTACKS[6][index] | KNIGHT_ATTACKS[7][index];
-            }
-            else if (piece == vorpal_helpers::KING)
-            {
+                break;
+            case vorpal_helpers::KING:
                 return KING_ATTACKS[0][index] | KING_ATTACKS[1][index] | KING_ATTACKS[2][index] | KING_ATTACKS[3][index] | KING_ATTACKS[4][index] | KING_ATTACKS[5][index] | KING_ATTACKS[6][index] | KING_ATTACKS[7][index];
-            }
-            else
-            {
+                break;
+            case vorpal_helpers::BISHOP:
+                return RAYS[vorpal_helpers::NORTH_EAST][index] | RAYS[vorpal_helpers::NORTH_WEST][index] | RAYS[vorpal_helpers::SOUTH_EAST][index] | RAYS[vorpal_helpers::SOUTH_WEST][index];
+                break;
+            case vorpal_helpers::ROOK:
+                return RAYS[vorpal_helpers::NORTH][index] | RAYS[vorpal_helpers::WEST][index] | RAYS[vorpal_helpers::EAST][index] | RAYS[vorpal_helpers::SOUTH][index];
+                break;
+            case vorpal_helpers::QUEEN:
+                return RAYS[vorpal_helpers::NORTH_EAST][index] | RAYS[vorpal_helpers::NORTH_WEST][index] | RAYS[vorpal_helpers::SOUTH_EAST][index] | RAYS[vorpal_helpers::SOUTH_WEST][index] | RAYS[vorpal_helpers::NORTH][index] | RAYS[vorpal_helpers::WEST][index] | RAYS[vorpal_helpers::EAST][index] | RAYS[vorpal_helpers::SOUTH][index];
+                break;
+            default:
                 return 0;
+                break;
             }
-            // add bishop + rook + queen support.
         }
     };
 }; // namespace vorpal_bitmasks

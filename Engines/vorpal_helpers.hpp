@@ -180,7 +180,7 @@ namespace vorpal_helpers
         return (((((((((((unsigned)(bitboard >> 32) != 0) * 2) + ((lsb & 0xffff0000) != 0)) * 2) + ((lsb & 0xff00ff00) != 0)) * 2) + ((lsb & 0xf0f0f0f0) != 0)) * 2) + ((lsb & 0xcccccccc) != 0)) * 2) + ((lsb & 0xaaaaaaaa) != 0);
     }
 
-    int bitscan_reverse(U64 bitboard) // this function is just magic copied from here https://www.chessprogramming.org/BitScan#Double_conversion
+    auto bitscan_reverse(U64 bitboard) -> int // this function is just magic copied from here https://www.chessprogramming.org/BitScan#Double_conversion
     {
         union
         {
