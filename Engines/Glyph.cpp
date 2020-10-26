@@ -276,6 +276,8 @@ int main()
 {
     Glyph glyph;
     int i;
+    std::cin >> i;
+    glyph.play(i);
     glyph.show();
     while (glyph.evaluate() == 0 && glyph.is_full() == false)
     {
@@ -287,9 +289,9 @@ int main()
         {
             break;
         }
-        //std::cin >> i;
-        //glyph.play(i);
-        //glyph.show();
+        std::cin >> i;
+        glyph.play(i);
+        glyph.show();
     }
     glyph.show_result();
     return 0;

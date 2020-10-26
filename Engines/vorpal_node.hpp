@@ -347,25 +347,23 @@ namespace vorpal_node
 
         auto pseudo_legal_moves() -> std::vector<vorpal_move::Move>  // TODO
         {
-            U64 our_pieces = BB_COLORS[turn];
-            U64 our_pawns = BB_PIECES[0] & our_pieces;
-            U64 targets = BB_COLORS[(turn + 1) % 2];
-            std::vector<vorpal_move::Move> moveset;
-            for (int sq = 0; sq < 64; sq++) //pawn-forward moves
+            std::vector<vorpal_move::Move> moves;
+            for (int i = 0; i < 6; i++)
             {
-                if (get_square(our_pawns, sq))
+                for (U64 ls1b : vorpal_helpers::bitboard_split(BB_PIECES[i]))
                 {
-                    if (!get_square(targets, sq))
+                    for (U64 target : vorpal_helpers::bitboard_split(M.union_bitmask(i, ls1b)))
                     {
-                        moveset.push_back(vorpal_move::Move(sq, sq + 8 * mod(), 0 + 6 * turn, false, 12));
-                    }
-                    if (M.PAWN_ATTACKS[sq][turn] & targets)
-                    {
-                        //perform some sort of check for left or right pawn take
+                        moves.push_back(vorpal_move::Move(
+                            bitscan_forward(ls1b), 
+                            bitscan_forward(target), 
+                            i, 
+                            ls1b & BB_COLORS[0])
+                        );
                     }
                 }
             }
-            return moveset;
+            return moves;
         }
 
         auto legal_moves() -> std::vector<vorpal_move::Move>  // TODO

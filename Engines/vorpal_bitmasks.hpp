@@ -10,6 +10,7 @@ namespace vorpal_bitmasks
     {
     public:
         U64 MASK[64] = {};
+        U64 PAWN_MOVES[64][2];
         U64 PAWN_ATTACKS[64][2];
         U64 KNIGHT_ATTACKS[8][64];
         U64 KING_ATTACKS[8][64];
@@ -20,6 +21,27 @@ namespace vorpal_bitmasks
             for (int i = 0; i < 64; i++) // single-bit masks
             {
                 MASK[i] = 1LL << i;
+            }
+
+            for (int i = 0; i < 64; i++) // pawn move masks
+            {
+                if (i < 8 || i > 55)
+                {
+                    PAWN_MOVES[i][0] = 0;
+                    PAWN_MOVES[i][1] = 0;
+                }
+                else if (vorpal_helpers::row(i) == 1 || vorpal_helpers::row(i) == 6)
+                {
+                    PAWN_MOVES[i][0] |= 1LL << i + 8;
+                    PAWN_MOVES[i][0] |= 1LL << i + 16;
+                    PAWN_MOVES[i][1] |= 1LL << i - 8;
+                    PAWN_MOVES[i][1] |= 1LL << i - 16;
+                }
+                else
+                {
+                    PAWN_MOVES[i][0] |= 1LL << i + 8;
+                    PAWN_MOVES[i][1] |= 1LL << i - 8;
+                }
             }
 
             for (int i = 0; i < 64; i++) // pawn attack masks

@@ -104,7 +104,7 @@ namespace vorpal_helpers
 
     auto move_to_string(vorpal_move::Move move) -> std::string
     {
-        std::string builder;
+        std::string builder = "";
         builder.append("Move ");
         builder.append(pieceNames[move.piece]);
         builder.append(" C:");
@@ -388,5 +388,15 @@ namespace vorpal_helpers
         return out;
     }
 
-    
+    auto bitboard_split(U64 bb) -> std::vector<U64>
+    {
+        std::vector<U64> out;
+        while (bb)
+        {
+            U64 ls1b = bb & -bb; // isolate LS1B
+            out.push_back(ls1b);
+            bb &= bb - 1; // reset LS1B
+        }
+        return out;
+    }
 }; // namespace vorpal_helpers

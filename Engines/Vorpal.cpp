@@ -58,6 +58,11 @@ public:
         int testVar = 0;
     }
 
+    auto legal_moves() -> std::vector<vorpal_move::Move>
+    {
+        return node.legal_moves();
+    }
+
     auto evaluate(int depth) -> int
     {
         nodes++;            //increment nodes evaluated
@@ -109,7 +114,11 @@ public:
 
 auto main() -> int
 {
-    std::cout << string(M.union_bitmask(vorpal_helpers::KNIGHT, 12));
+    Vorpal engine;
+    for (auto &&i : engine.node.legal_moves())
+    {
+        std::cout << move_to_string(i) << '\n';
+    }
     return 0;
 }
 

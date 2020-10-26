@@ -1,14 +1,18 @@
 #include <iostream>
 #include <vector>
 
+enum numbers
+{
+    zero,
+    one,
+    two = 4,
+    three,
+    four,
+};
+
 auto main() -> int
 {
-    int array[] = {0, 1, 2, 3, 4};
-
-    for (int i = 0; i < 5; i++)
-    {
-        std::cout << *(array + i) << '\n';
-    }
+    std::cout << three;
     
     return 0;
 }
