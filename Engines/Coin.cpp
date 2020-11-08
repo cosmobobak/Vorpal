@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
 class Coin
 {
@@ -39,7 +40,7 @@ class Coin
             }
         }
 
-        bool is_full() //WORKING
+        auto is_full() -> bool //WORKING
         {
             for (int row = 0; row < 6; row++){
                 for (int col = 0; col < 7; col++){
@@ -61,6 +62,19 @@ class Coin
                 std::cout << '\n';
             }
             std::cout << '\n';
+        }
+
+        auto legal_moves() -> std::vector<int>
+        {
+            std::vector<int> moves;
+            for (int col = 0; col < 7; col++)
+            {
+                if (node[0][col] != '.')
+                {
+                    moves.push_back(col);
+                }
+            }
+            return moves;
         }
 
         void play(int col) //WORKING
@@ -104,7 +118,7 @@ class Coin
             }
         }
 
-        int horizontal_term()
+        auto horizontal_term() -> int
         {
             int score;
             score = 0;
@@ -126,7 +140,7 @@ class Coin
             return score;
         }
 
-        int vertical_term()
+        auto vertical_term() -> int
         {
             int score;
             score = 0;
@@ -148,7 +162,7 @@ class Coin
             return score;
         }
 
-        int diagup_term()
+        auto diagup_term() -> int
         {
             int score;
             score = 0;
@@ -170,7 +184,7 @@ class Coin
             return score;
         }
 
-        int diagdown_term()
+        auto diagdown_term() -> int
         {
             int score;
             score = 0;
@@ -192,7 +206,7 @@ class Coin
             return score;
         }
 
-        int evaluate()
+        auto evaluate() -> int
         {
             int v, h, u, d;
             v = vertical_term();
@@ -203,27 +217,39 @@ class Coin
             return v + h + u + d;
         }
 
-        int negamax(int depth=10, int colour=1, int a = -2, int b = 2) //WORKING
+        auto rollout() -> int
         {
-            if(evaluate() != 0 || is_full() == true || depth < 1){
+            
+        }
+
+        auto negamax(int depth = 10, int colour = 1, int a = -2, int b = 2) //WORKING
+        {
+            if(evaluate() != 0 || is_full() || depth < 1){
                 return colour * evaluate();
             }
             int score;
-            for (int col = 0; col < 7; col++){
-                if (node[0][col] == '.'){
-                    play(col);
-                    nodes++;
-                    score = -negamax(depth - 1, -colour, -b, -a);
-                    unplay(col);
+            
+            for (auto col : legal_moves())
+            {
+                play(col);
+                nodes++;
+                score = -negamax(depth - 1, -colour, -b, -a);
+                unplay(col);
 
-                    if (score > b){return b;}
-                    if (score > a){a = score;}
+                if (score > b)
+                {
+                    return b;
+                }
+                if (score > a)
+                {
+                    a = score;
                 }
             }
+            
             return a;
         }
 
-        int max_pos(int arr[]) //WORKING
+        auto max_pos(int arr[]) -> int //WORKING
         {
             int max, index;
             max = arr[0];
@@ -237,7 +263,7 @@ class Coin
             return index;
         }
 
-        int min_pos(float arr[]) //WORKING
+        auto min_pos(float arr[]) -> int //WORKING
         {
             float max, index;
             max = arr[0];
@@ -290,7 +316,7 @@ class Coin
             }
         }
 
-        bool is_game_over()
+        auto is_game_over() -> int
         {
             if (evaluate() != 0 || is_full() == true){
                 return true;

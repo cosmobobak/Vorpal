@@ -9,7 +9,7 @@
 
 using namespace vorpal_node;
 
-#define INF 10000000
+#define INF 10000000000
 
 //CLASS DEFINITIONS BEGIN
 
@@ -83,6 +83,7 @@ public:
         rating += std::bitset<64>(node.BB_PIECES[2] & node.BB_COLORS[1]).count();
         rating += std::bitset<64>(node.BB_PIECES[3] & node.BB_COLORS[1]).count();
         rating += std::bitset<64>(node.BB_PIECES[4] & node.BB_COLORS[1]).count();
+
         rating -= std::bitset<64>(node.BB_PIECES[0] & node.BB_COLORS[0]).count();
         rating -= std::bitset<64>(node.BB_PIECES[1] & node.BB_COLORS[0]).count();
         rating -= std::bitset<64>(node.BB_PIECES[2] & node.BB_COLORS[0]).count();
@@ -101,28 +102,60 @@ public:
         int score;
         for (auto &&i : node.legal_moves())
         {
-            node.make(&i);
+            node.push(i);
             score = -negamax(depth - 1, -color, -b, -a);
-            node.unmake(&i);
+            node.pop();
 
-            //a = max(a, score)
-            //alphabeta cutoff
+            if (b >= score)
+            {
+                return b;
+            }
+            if (a < score)
+            {
+                a = score;
+            }
         }
         return a;
+    }
+
+    void perftx(int n)
+    {
+        if (n == 0)
+        {
+            nodes++;
+        }
+        else
+        {
+            for (vorpal_move::Move move : node.legal_moves())
+            {
+                node.push(move);
+                perftx(n - 1);
+                node.pop();
+            }
+        }
+    }
+
+    void perft(int n)
+    {
+        nodes = 0;
+        perftx(n);
+        std::cout << nodes;
     }
 };
 
 auto main() -> int
 {
     Vorpal engine;
-    for (auto &&i : engine.node.legal_moves())
-    {
-        std::cout << move_to_string(i) << '\n';
-    }
+
+    std::vector<vorpal_move::Move> moves = {engine.node.move_from_uci("e2e4"), engine.node.move_from_uci("d7d5"), engine.node.move_from_uci("e4d5")}; //e4, d5, exd5
+
+    engine.node.push((moves[0]));
+    engine.node.push((moves[1]));
+
     return 0;
 }
 
 //TODO: pawn attacks generator (ep_square?)
-//
+//make sure all piece captures work and unwork, ensure stack works, have a look at cPiece.
 //MOVE GENERATOR
 //RULES??

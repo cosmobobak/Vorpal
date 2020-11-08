@@ -106,7 +106,7 @@ namespace vorpal_helpers
     {
         std::string builder = "";
         builder.append("Move ");
-        builder.append(pieceNames[move.piece]);
+        builder.append(pieceNames[move.piece + move.color * 6]);
         builder.append(" C:");
         builder.append(std::to_string(move.color));
         builder.append(" ");

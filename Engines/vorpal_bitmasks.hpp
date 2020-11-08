@@ -4,6 +4,8 @@
 
 #define U64 unsigned long long
 
+using namespace vorpal_helpers;
+
 namespace vorpal_bitmasks
 {
     class MaskSet
@@ -30,7 +32,7 @@ namespace vorpal_bitmasks
                     PAWN_MOVES[i][0] = 0;
                     PAWN_MOVES[i][1] = 0;
                 }
-                else if (vorpal_helpers::row(i) == 1 || vorpal_helpers::row(i) == 6)
+                else if (row(i) == 1 || row(i) == 6)
                 {
                     PAWN_MOVES[i][0] |= 1LL << i + 8;
                     PAWN_MOVES[i][0] |= 1LL << i + 16;
@@ -77,7 +79,7 @@ namespace vorpal_bitmasks
             {
                 for (int dir = 0; dir < 8; dir++)
                 {
-                    RAYS[dir][i] = vorpal_helpers::ray_bitmask_generator(i, dir);
+                    RAYS[dir][i] = ray_bitmask_generator(i, dir);
                 }
             }
 
@@ -85,7 +87,7 @@ namespace vorpal_bitmasks
             {
                 for (int dir = 0; dir < 8; dir++)
                 {
-                    KNIGHT_ATTACKS[dir][i] = vorpal_helpers::knight_move_generator(i, dir);
+                    KNIGHT_ATTACKS[dir][i] = knight_move_generator(i, dir);
                 }
             }
             
@@ -93,7 +95,7 @@ namespace vorpal_bitmasks
             {
                 for (int dir = 0; dir < 8; dir++)
                 {
-                    KING_ATTACKS[dir][i] = vorpal_helpers::king_move_generator(i, dir);
+                    KING_ATTACKS[dir][i] = king_move_generator(i, dir);
                 }
             }
         }
@@ -102,20 +104,20 @@ namespace vorpal_bitmasks
         {
             switch (piece)
             {
-            case vorpal_helpers::KNIGHT:
+            case KNIGHT:
                 return KNIGHT_ATTACKS[0][index] | KNIGHT_ATTACKS[1][index] | KNIGHT_ATTACKS[2][index] | KNIGHT_ATTACKS[3][index] | KNIGHT_ATTACKS[4][index] | KNIGHT_ATTACKS[5][index] | KNIGHT_ATTACKS[6][index] | KNIGHT_ATTACKS[7][index];
                 break;
-            case vorpal_helpers::KING:
+            case KING:
                 return KING_ATTACKS[0][index] | KING_ATTACKS[1][index] | KING_ATTACKS[2][index] | KING_ATTACKS[3][index] | KING_ATTACKS[4][index] | KING_ATTACKS[5][index] | KING_ATTACKS[6][index] | KING_ATTACKS[7][index];
                 break;
-            case vorpal_helpers::BISHOP:
-                return RAYS[vorpal_helpers::NORTH_EAST][index] | RAYS[vorpal_helpers::NORTH_WEST][index] | RAYS[vorpal_helpers::SOUTH_EAST][index] | RAYS[vorpal_helpers::SOUTH_WEST][index];
+            case BISHOP:
+                return RAYS[NORTH_EAST][index] | RAYS[NORTH_WEST][index] | RAYS[SOUTH_EAST][index] | RAYS[SOUTH_WEST][index];
                 break;
-            case vorpal_helpers::ROOK:
-                return RAYS[vorpal_helpers::NORTH][index] | RAYS[vorpal_helpers::WEST][index] | RAYS[vorpal_helpers::EAST][index] | RAYS[vorpal_helpers::SOUTH][index];
+            case ROOK:
+                return RAYS[NORTH][index] | RAYS[WEST][index] | RAYS[EAST][index] | RAYS[SOUTH][index];
                 break;
-            case vorpal_helpers::QUEEN:
-                return RAYS[vorpal_helpers::NORTH_EAST][index] | RAYS[vorpal_helpers::NORTH_WEST][index] | RAYS[vorpal_helpers::SOUTH_EAST][index] | RAYS[vorpal_helpers::SOUTH_WEST][index] | RAYS[vorpal_helpers::NORTH][index] | RAYS[vorpal_helpers::WEST][index] | RAYS[vorpal_helpers::EAST][index] | RAYS[vorpal_helpers::SOUTH][index];
+            case QUEEN:
+                return RAYS[NORTH_EAST][index] | RAYS[NORTH_WEST][index] | RAYS[SOUTH_EAST][index] | RAYS[SOUTH_WEST][index] | RAYS[NORTH][index] | RAYS[WEST][index] | RAYS[EAST][index] | RAYS[SOUTH][index];
                 break;
             default:
                 return 0;
