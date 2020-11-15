@@ -9,8 +9,6 @@
 
 using namespace vorpal_node;
 
-#define INF 10000000000
-
 //CLASS DEFINITIONS BEGIN
 
 class Vorpal
@@ -120,7 +118,7 @@ public:
 
     void perftx(int n)
     {
-        if (n == 0)
+        if (n <= 0)
         {
             nodes++;
         }
@@ -135,22 +133,43 @@ public:
         }
     }
 
-    void perft(int n)
+    auto perft(int n) -> int
     {
         nodes = 0;
         perftx(n);
-        std::cout << nodes;
+        return nodes;
+    }
+
+    void autoperft()
+    {
+        for (int i = 0; i < 6; i++)
+        {
+            std::cout << perft(i) << '\n';
+        }
     }
 };
 
 auto main() -> int
 {
+    //std::vector<vorpal_move::Move> ref;
+
     Vorpal engine;
 
-    std::vector<vorpal_move::Move> moves = {engine.node.move_from_uci("e2e4"), engine.node.move_from_uci("d7d5"), engine.node.move_from_uci("e4d5")}; //e4, d5, exd5
+    //int i = 0;
+    //ref = engine.node.legal_moves();
+    //for (auto &&move : engine.node.legal_moves())
+    //{
+    //    comparison = engine.node.legal_moves();
+    //    if (string(comparison) != string(ref))
+    //    {
+    //        std::cout << i << ' ' << string(comparison) << '\n';
+    //    }
+    //    engine.node.push(move);
+    //    engine.node.pop();
+    //    i++;
+    //}
 
-    engine.node.push((moves[0]));
-    engine.node.push((moves[1]));
+    std::cout << string(engine.node.legal_moves());
 
     return 0;
 }
@@ -159,3 +178,4 @@ auto main() -> int
 //make sure all piece captures work and unwork, ensure stack works, have a look at cPiece.
 //MOVE GENERATOR
 //RULES??
+//use bitscans from intrin0.h ???

@@ -13,7 +13,7 @@ public:
         nodes = 0;
     }
 
-    bool pos_filled(int i)
+    auto pos_filled(int i) -> bool
     {
         if ((node[0] & (1L << i)) != 0)
         {
@@ -26,7 +26,7 @@ public:
         return false;
     }
 
-    bool player_at(int i) //only valid to use if pos_filled() returns true
+    auto player_at(int i) -> bool //only valid to use if pos_filled() returns true, true = x, false = y
     {
         if ((node[0] & (1L << i)) != 0)
         {
@@ -38,7 +38,7 @@ public:
         }
     }
 
-    bool is_full()
+    auto is_full() -> bool
     {
         for (int i = 0; i < 9; i++)
         {
@@ -118,7 +118,7 @@ public:
         }
     }
 
-    int evaluate()
+    auto evaluate() -> int
     {
         nodes++; // increment nodes
         // check first diagonal
@@ -190,7 +190,25 @@ public:
         return 0;
     }
 
-    int negamax(int turn, int a = -2, int b = 2)
+    void print(std::string input, std::string end = "\n")
+    {
+        std::cout << input << end;
+    }
+
+    auto get_player_move() -> int
+    {
+        int pos;
+        std::cin >> pos;
+        while (pos_filled(pos))
+        {
+            print("invalid move.");
+            show();
+            std::cin >> pos;
+        }
+        return pos;
+    }
+
+    auto negamax(int turn, int a = -2, int b = 2) -> int
     {
         if (evaluate() != 0 || is_full() == true)
         {
@@ -219,7 +237,7 @@ public:
         return a;
     }
 
-    int max_pos(int arr[])
+    auto max_pos(int arr[]) -> int
     {
         int max, index;
         max = arr[0];
@@ -272,13 +290,26 @@ public:
     }
 };
 
+auto get_first_player() -> bool
+{
+    bool player;
+    std::cout << "Is the human player going first? [1/0]"
+              << "\n";
+    std::cin >> player;
+    return player;
+}
+
 int main()
 {
     Glyph glyph;
     int i;
-    std::cin >> i;
-    glyph.play(i);
     glyph.show();
+    if (get_first_player())
+    {
+        i = glyph.get_player_move();
+        glyph.play(i);
+        glyph.show();
+    }
     while (glyph.evaluate() == 0 && glyph.is_full() == false)
     {
         glyph.engine_move();
@@ -289,7 +320,7 @@ int main()
         {
             break;
         }
-        std::cin >> i;
+        i = glyph.get_player_move();
         glyph.play(i);
         glyph.show();
     }

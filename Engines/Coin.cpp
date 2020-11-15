@@ -217,11 +217,6 @@ class Coin
             return v + h + u + d;
         }
 
-        auto rollout() -> int
-        {
-            
-        }
-
         auto negamax(int depth = 10, int colour = 1, int a = -2, int b = 2) //WORKING
         {
             if(evaluate() != 0 || is_full() || depth < 1){

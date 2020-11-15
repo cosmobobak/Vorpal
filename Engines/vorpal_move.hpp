@@ -20,8 +20,19 @@ namespace vorpal_move
         int cColor;
         bool iscapture;
 
-        Move(int from_square = 0, int to_square = 0, int piece = 1, bool color = 0, int cPiece = 12)
-            : from_square(from_square), to_square(to_square), piece(piece), color(color), cPiece(cPiece), cColor(!color), iscapture((cPiece == 12) ? false : true)
+        Move(
+            int from_square = 0, 
+            int to_square = 0, 
+            int piece = 1, 
+            bool color = 0, 
+            int cPiece = 12) : 
+            from_square(from_square), 
+            to_square(to_square), 
+            piece(piece), 
+            color(color), 
+            cPiece(cPiece), 
+            cColor(!color), 
+            iscapture((cPiece == 12) ? false : true)
         {}
     };
 }; // namespace vorpal_move

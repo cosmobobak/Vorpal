@@ -1,5 +1,4 @@
 #include <bitset>
-#include <vector>
 
 #include "vorpal_bitmasks.hpp"
 
@@ -305,6 +304,50 @@ namespace vorpal_node
             return attacks;
         }
 
+        auto get_rook_moves_c(int square, U64 blockers) -> U64
+        {
+            U64 attacks = 0ULL;
+
+            // North
+            attacks |= M.RAYS[NORTH][square];     // OR-on the northwest ray to the attacks accumulator
+            if (M.RAYS[NORTH][square] & blockers) // if there's a blocker on the northwest ray
+            {
+                int blockerIndex = bitscan_forward(M.RAYS[NORTH][square] & blockers); //find blocker index
+                attacks &= ~M.RAYS[NORTH][blockerIndex];                              // use AND to eliminate the ray past the blocker
+            }
+
+            // West
+            attacks |= M.RAYS[EAST][square];
+            if (M.RAYS[EAST][square] & blockers)
+            {
+                int blockerIndex = bitscan_forward(M.RAYS[WEST][square] & blockers);
+                attacks &= ~M.RAYS[EAST][blockerIndex];
+            }
+
+            // South
+            attacks |= M.RAYS[SOUTH][square];
+            if (M.RAYS[SOUTH][square] & blockers)
+            {
+                int blockerIndex = bitscan_reverse(M.RAYS[SOUTH][square] & blockers);
+                attacks &= ~M.RAYS[SOUTH][blockerIndex];
+            }
+
+            // East
+            attacks |= M.RAYS[WEST][square];
+            if (M.RAYS[WEST][square] & blockers)
+            {
+                int blockerIndex = bitscan_reverse(M.RAYS[EAST][square] & blockers);
+                attacks &= ~M.RAYS[WEST][blockerIndex];
+            }
+
+            return attacks;
+        }
+
+        auto get_queen_moves_c(int square, U64 blockers) -> U64
+        {
+            return get_bishop_moves_c(square, blockers) | get_rook_moves_c(square, blockers);
+        }
+
         auto pseudo_legal_moves() -> std::vector<vorpal_move::Move>  // TODO
         {
             U64 our_pieces = BB_COLORS[turn];
@@ -321,7 +364,7 @@ namespace vorpal_node
                         from_square,
                         to_square,
                         PAWN,
-                        (bool)(from_bb & BB_COLORS[WHITE]),
+                        turn,
                         1)); // setting cpiece here to 1 because a stack can be implemented to handle pop
                 }
                 for (U64 target_bb : bitboard_split(M.PAWN_ATTACKS[from_square][turn] & (BB_COLORS[!turn]) | EP_SQUARE))
@@ -331,7 +374,7 @@ namespace vorpal_node
                         from_square,
                         to_square,
                         PAWN,
-                        (bool)(from_bb & BB_COLORS[WHITE])));
+                        turn));
                 }
             }
             for (U64 from_bb : bitboard_split(BB_PIECES[KNIGHT] & our_pieces))
@@ -344,7 +387,7 @@ namespace vorpal_node
                         from_square,
                         to_square,
                         KNIGHT,
-                        (bool)(from_bb & BB_COLORS[WHITE]),
+                        turn,
                         (get_square(BB_COLORS[~turn], to_square)) ? 1 : 12)); // setting cpiece here to 1 because a stack can be implemented to handle pop
                 }
             }
@@ -358,10 +401,53 @@ namespace vorpal_node
                         from_square,
                         to_square,
                         KING,
-                        (bool)(from_bb & BB_COLORS[WHITE]),
+                        turn,
                         (get_square(BB_COLORS[!turn], to_square)) ? 1 : 12)); // setting cpiece here to 1 because a stack can be implemented to handle pop
                 }
             }
+            for (U64 from_bb : bitboard_split(BB_PIECES[BISHOP] & our_pieces))
+            {
+                int from_square = bitscan_forward(from_bb);
+                for (U64 target_bb : bitboard_split(get_bishop_moves_c(from_square, BB_OCCUPIED) & ~our_pieces))
+                {
+                    int to_square = bitscan_forward(target_bb);
+                    moves.push_back(vorpal_move::Move(
+                        from_square,
+                        to_square,
+                        BISHOP,
+                        turn,
+                        (get_square(BB_COLORS[!turn], to_square)) ? 1 : 12));
+                }
+            }
+            for (U64 from_bb : bitboard_split(BB_PIECES[ROOK] & our_pieces))
+            {
+                int from_square = bitscan_forward(from_bb);
+                for (U64 target_bb : bitboard_split(get_rook_moves_c(from_square, BB_OCCUPIED) & ~our_pieces))
+                {
+                    int to_square = bitscan_forward(target_bb);
+                    moves.push_back(vorpal_move::Move(
+                        from_square,
+                        to_square,
+                        ROOK,
+                        turn,
+                        (get_square(BB_COLORS[!turn], to_square)) ? 1 : 12));
+                }
+            }
+            for (U64 from_bb : bitboard_split(BB_PIECES[QUEEN] & our_pieces))
+            {
+                int from_square = bitscan_forward(from_bb);
+                for (U64 target_bb : bitboard_split(get_queen_moves_c(from_square, BB_OCCUPIED) & ~our_pieces))
+                {
+                    int to_square = bitscan_forward(target_bb);
+                    moves.push_back(vorpal_move::Move(
+                        from_square,
+                        to_square,
+                        QUEEN,
+                        turn,
+                        (get_square(BB_COLORS[!turn], to_square)) ? 1 : 12));
+                }
+            }
+
             return moves;
         }
 

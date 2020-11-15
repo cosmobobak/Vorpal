@@ -1,7 +1,5 @@
 #include "vorpal_helpers.hpp"
 
-#define INF 10000000
-
 #define U64 unsigned long long
 
 using namespace vorpal_helpers;

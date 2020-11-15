@@ -1,10 +1,11 @@
 #include <iostream>
 #include <string>
 #include <cassert>
+#include <vector>
 
 #include "vorpal_move.hpp"
 
-#define INF 10000000
+#define INF 10000000000
 
 #define U64 unsigned long long
 #define U32 unsigned __int32
@@ -17,6 +18,20 @@
 
 namespace vorpal_helpers
 {
+    auto square_notation(int index) -> std::string
+    {
+        // 0 => A8
+        // 63 => H1
+        char letters[8] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'};
+        char numbers[8] = {'1', '2', '3', '4', '5', '6', '7', '8'};
+        char first;
+        char second;
+        int modu = index % 8;
+        int quot = index / 8;
+        first = letters[modu];
+        second = numbers[quot];
+        return {first, second};
+    }
 
     char pieces[13] = {'p', 'n', 'b', 'r', 'q', 'k', 'P', 'N', 'B', 'R', 'Q', 'K', '.'};
     std::string pieceNames[13] = {
@@ -80,7 +95,7 @@ namespace vorpal_helpers
 
     std::ostream &operator<<(std::ostream &os, const vorpal_move::Move &obj)
     {
-        os << "Move " << pieceNames[obj.piece] << " C:" << obj.color << " " << obj.from_square << "->" << obj.to_square << " C?:" << obj.iscapture << " CP:" << obj.cPiece << " CC:" << obj.cColor;
+        os << "Move " << pieceNames[obj.piece + obj.color * 6] << " C:" << obj.color << " " << square_notation(obj.from_square) << "->" << square_notation(obj.to_square) << " C?:" << obj.iscapture << " CP:" << obj.cPiece << " CC:" << obj.cColor;
         return os;
     }
 
@@ -92,10 +107,10 @@ namespace vorpal_helpers
     }
 
     template <class T>
-    void print_array(T arr[], int len)
+    void print(T arr[], int len)
     {
         std::cout << "{ ";
-        for (size_t i = 0; i < len; i++)
+        for (int i = 0; i < len; i++)
         {
             std::cout << arr[i] << ", ";
         }
@@ -110,9 +125,9 @@ namespace vorpal_helpers
         builder.append(" C:");
         builder.append(std::to_string(move.color));
         builder.append(" ");
-        builder.append(std::to_string(move.from_square));
+        builder.append(square_notation(move.from_square));
         builder.append("->");
-        builder.append(std::to_string(move.to_square));
+        builder.append(square_notation(move.to_square));
         builder.append(" C?:");
         builder.append(std::to_string(move.iscapture));
         builder.append(" CP:");
@@ -171,15 +186,17 @@ namespace vorpal_helpers
         return builder;
     }
 
+    //from the right
     auto bitscan_forward(U64 bitboard) -> int // this function is just magic copied from here https://www.chessprogramming.org/BitScan#Divide_and_Conquer
     {
         unsigned int lsb;
-        assert(bitboard != 0);
+        //assert(bitboard != 0);
         bitboard &= -bitboard; // LS1B-Isolation
         lsb = (unsigned)bitboard | (unsigned)(bitboard >> 32);
         return (((((((((((unsigned)(bitboard >> 32) != 0) * 2) + ((lsb & 0xffff0000) != 0)) * 2) + ((lsb & 0xff00ff00) != 0)) * 2) + ((lsb & 0xf0f0f0f0) != 0)) * 2) + ((lsb & 0xcccccccc) != 0)) * 2) + ((lsb & 0xaaaaaaaa) != 0);
     }
 
+    //from the left
     auto bitscan_reverse(U64 bitboard) -> int // this function is just magic copied from here https://www.chessprogramming.org/BitScan#Double_conversion
     {
         union
