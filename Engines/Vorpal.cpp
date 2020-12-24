@@ -9,8 +9,6 @@
 
 using namespace vorpal_node;
 
-//CLASS DEFINITIONS BEGIN
-
 class Vorpal
 {
 public:
