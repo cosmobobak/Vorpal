@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 
-namespace Coin
+namespace Checkers
 {
 
 #define Move int
@@ -9,17 +9,17 @@ namespace Coin
     class State
     {
     public:
-        int8_t node[6][7] = {
-            {0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0},
+        char node[6][7] = {
+            {'.', '.', '.', '.', '.', '.', '.'},
+            {'.', '.', '.', '.', '.', '.', '.'},
+            {'.', '.', '.', '.', '.', '.', '.'},
+            {'.', '.', '.', '.', '.', '.', '.'},
+            {'.', '.', '.', '.', '.', '.', '.'},
+            {'.', '.', '.', '.', '.', '.', '.'},
         };
         int turn = 1;
         int nodes = 0;
-        int players[2] = {-1, 1};
+        char players[2] = {'X', 'O'};
         std::vector<Move> movestack;
 
         void reset()
@@ -28,7 +28,7 @@ namespace Coin
             {
                 for (int col = 0; col < 7; col++)
                 {
-                    node[row][col] = 0;
+                    node[row][col] = '.';
                 }
             }
         }
@@ -39,7 +39,7 @@ namespace Coin
             {
                 for (int col = 0; col < 7; col++)
                 {
-                    if (node[row][col] == 0)
+                    if (node[row][col] == '.')
                     {
                         return false;
                     }
@@ -51,12 +51,11 @@ namespace Coin
         void show() //WORKING
         {
             int row, col;
-            char symbols[] = {'X', '.', 'O'};
             for (row = 0; row < 6; ++row)
             {
                 for (col = 0; col < 7; ++col)
                 {
-                    std::cout << symbols[node[row][col] + 1] << ' ';
+                    std::cout << node[row][col] << ' ';
                 }
                 std::cout << '\n';
             }
@@ -65,11 +64,11 @@ namespace Coin
 
         auto legal_moves() -> std::vector<int>
         {
-            std::vector<Move> moves;
+            std::vector<int> moves;
             int ordering[] = {3, 4, 2, 5, 1, 6, 0};
             for (int col = 0; col < 7; col++)
             {
-                if (node[0][ordering[col]] == 0)
+                if (node[0][ordering[col]] == '.')
                 {
                     moves.push_back(ordering[col]);
                 }
@@ -79,9 +78,9 @@ namespace Coin
 
         void random_play()
         {
-            Move col;
+            int col;
             col = rand() % 7;
-            while (node[0][col] != 0)
+            while (node[0][col] != '.')
             {
                 col = rand() % 7;
             }
@@ -90,7 +89,7 @@ namespace Coin
 
         auto pos_filled(int col) -> bool
         {
-            return (node[0][col] != 0);
+            return (node[0][col] != '.');
         }
 
         void pass_turn()
@@ -102,7 +101,7 @@ namespace Coin
         {
             for (int row = 0; row < 6; row++)
             {
-                if (node[row][col] != 0)
+                if (node[row][col] != '.')
                 {
                     if (turn == 1)
                     {
@@ -140,9 +139,9 @@ namespace Coin
             movestack.pop_back();
             for (int row = 0; row < 6; row++)
             {
-                if (node[row][col] != 0)
+                if (node[row][col] != '.')
                 {
-                    node[row][col] = 0;
+                    node[row][col] = '.';
                     break;
                 }
             }
@@ -257,16 +256,24 @@ namespace Coin
             int v, h, u, d;
             v = vertical_term();
             if (v)
-                {return v;}
+            {
+                return v;
+            }
             h = horizontal_term();
             if (h)
-                {return h;}
+            {
+                return h;
+            }
             u = diagup_term();
             if (u)
-                {return u;}
+            {
+                return u;
+            }
             d = diagdown_term();
             if (d)
-                {return d;}
+            {
+                return d;
+            }
 
             return 0;
         }
@@ -301,4 +308,4 @@ namespace Coin
             }
         }
     };
-} // namespace Coin
+} // namespace Cehckers
