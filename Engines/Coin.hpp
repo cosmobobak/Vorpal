@@ -3,6 +3,9 @@
 
 namespace Coin
 {
+
+#define Move int
+
     class State
     {
     public:
@@ -62,11 +65,12 @@ namespace Coin
         auto legal_moves() -> std::vector<int>
         {
             std::vector<int> moves;
+            int ordering[] = {3, 4, 2, 5, 1, 6, 0};
             for (int col = 0; col < 7; col++)
             {
-                if (node[0][col] == '.')
+                if (node[0][ordering[col]] == '.')
                 {
-                    moves.push_back(col);
+                    moves.push_back(ordering[col]);
                 }
             }
             return moves;
@@ -86,6 +90,11 @@ namespace Coin
         auto pos_filled(int col) -> bool
         {
             return (node[0][col] != '.');
+        }
+
+        void pass_turn()
+        {
+            turn = -turn;
         }
 
         void play(int col) //WORKING
@@ -148,8 +157,6 @@ namespace Coin
 
         auto horizontal_term() -> int
         {
-            int score;
-            score = 0;
             for (int row = 0; row < 6; row++)
             {
                 for (int col = 0; col < 4; col++)
@@ -160,22 +167,20 @@ namespace Coin
                     {
                         if (node[row][col] == players[0])
                         {
-                            score += 1;
+                            return 1;
                         }
                         else if (node[row][col] == players[1])
                         {
-                            score -= 1;
+                            return -1;
                         }
                     }
                 }
             }
-            return score;
+            return 0;
         }
 
         auto vertical_term() -> int
         {
-            int score;
-            score = 0;
             for (int row = 0; row < 3; row++)
             {
                 for (int col = 0; col < 7; col++)
@@ -186,22 +191,20 @@ namespace Coin
                     {
                         if (node[row][col] == players[0])
                         {
-                            score += 1;
+                            return 1;
                         }
                         else if (node[row][col] == players[1])
                         {
-                            score -= 1;
+                            return -1;
                         }
                     }
                 }
             }
-            return score;
+            return 0;
         }
 
         auto diagup_term() -> int
         {
-            int score;
-            score = 0;
             for (int row = 3; row < 6; row++)
             {
                 for (int col = 0; col < 4; col++)
@@ -212,22 +215,20 @@ namespace Coin
                     {
                         if (node[row][col] == players[0])
                         {
-                            score += 1;
+                            return 1;
                         }
                         else if (node[row][col] == players[1])
                         {
-                            score -= 1;
+                            return -1;
                         }
                     }
                 }
             }
-            return score;
+            return 0;
         }
 
         auto diagdown_term() -> int
         {
-            int score;
-            score = 0;
             for (int row = 0; row < 3; row++)
             {
                 for (int col = 0; col < 4; col++)
@@ -238,109 +239,36 @@ namespace Coin
                     {
                         if (node[row][col] == players[0])
                         {
-                            score += 1;
+                            return 1;
                         }
                         else if (node[row][col] == players[1])
                         {
-                            score -= 1;
+                            return -1;
                         }
                     }
                 }
             }
-            return score;
+            return 0;
         }
 
         auto evaluate() -> int
         {
             int v, h, u, d;
             v = vertical_term();
+            if (v)
+                {return v;}
             h = horizontal_term();
+            if (h)
+                {return h;}
             u = diagup_term();
+            if (u)
+                {return u;}
             d = diagdown_term();
+            if (d)
+                {return d;}
 
-            return v + h + u + d;
+            return 0;
         }
-        
-        auto rel_evaluate(int turnmod) -> int
-        {
-            return evaluate() * turnmod;
-        }
-
-        // auto negamax(int depth = 10, int colour = 1, int a = -2, int b = 2) //WORKING
-        // {
-        //     if(evaluate() != 0 || is_full() || depth < 1){
-        //         return colour * evaluate();
-        //     }
-        //     int score;
-
-        //     for (auto col : legal_moves())
-        //     {
-        //         play(col);
-        //         nodes++;
-        //         score = -negamax(depth - 1, -colour, -b, -a);
-        //         unplay(col);
-
-        //         if (score > b)
-        //         {
-        //             return b;
-        //         }
-        //         if (score > a)
-        //         {
-        //             a = score;
-        //         }
-        //     }
-
-        //     return a;
-        // }
-
-        // auto max_pos(int arr[]) -> int //WORKING
-        // {
-        //     int max, index;
-        //     max = arr[0];
-        //     index = 0;
-        //     for (int i = 0; i < 7; i++){
-        //         if (arr[i] > max){
-        //             max = arr[i];
-        //             index = i;
-        //         }
-        //     }
-        //     return index;
-        // }
-
-        // auto min_pos(float arr[]) -> int //WORKING
-        // {
-        //     float max, index;
-        //     max = arr[0];
-        //     index = 0;
-        //     for (int i = 0; i < 7; i++){
-        //         if (arr[i] < max){
-        //             max = arr[i];
-        //             index = i;
-        //         }
-        //     }
-        //     return index;
-        // }
-
-        // void engine_move() //WORKING
-        // {
-        //     int x, y, index;
-        //     float scores [7] = {2,2,2,2,2,2,2};
-
-        //     for (int col = 0; col < 7; col++){
-        //         if (node[0][col] == '.'){
-        //             play(col);
-        //             scores[col] = negamax(4, turn, -2, 2);
-        //             unplay(col);
-        //         }
-        //     }
-        //     for (float i = 0; i < 7; i++)
-        //     {
-        //         scores[static_cast<int>(i)] -= 1-(abs(i-3)+3)/6;
-        //         std::cout << scores[static_cast<int>(i)] << " ";
-        //     }
-        //     std::cout << std::endl;
-        //     play(min_pos(scores));
-        // }
 
         void show_result() //WORKING
         {

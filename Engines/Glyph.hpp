@@ -3,6 +3,8 @@
 
 namespace Glyph
 {
+    #define Move int
+    
     class State
     {
     public:
@@ -132,6 +134,11 @@ namespace Glyph
         auto rel_evaluate(int turnmod) -> int
         {
             return evaluate() * turnmod;
+        }
+
+        void pass_turn()
+        {
+            turn = -turn;
         }
 
         void show()

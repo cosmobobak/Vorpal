@@ -8,6 +8,8 @@
 #include "Coin.hpp"
 #include "Glyph.hpp"
 
+#define EXP_FACTOR 5
+
 using namespace Coin;
 
 class TreeNode
@@ -131,13 +133,13 @@ public:
         return (double)winScore / (double)visits;
     }
 
-    auto best_child(int opponent) -> TreeNode *
+    auto best_child() -> TreeNode *
     {
         std::vector<TreeNode *>::iterator result;
         //show();
         result = std::max_element(
             children.begin(), children.end(),
-            [opponent](TreeNode *a, TreeNode *b) { return (opponent == -1) ? (a->get_visit_count() < b->get_visit_count()) : (a->get_visit_count() > b->get_visit_count()); });
+            [](TreeNode *a, TreeNode *b) { return (a->get_visit_count() < b->get_visit_count()); });
         return children.at(std::distance(children.begin(), result));
     }
 
@@ -169,7 +171,7 @@ namespace UCT
         {
             return INT_MAX;
         }
-        return ((double)nodeWinScore / (double)nodeVisit) + 1.41 * sqrt(log(totalVisit) / (double)nodeVisit);
+        return ((double)nodeWinScore / (double)nodeVisit) + 1.41 * sqrt(log(totalVisit) / (double)nodeVisit) * EXP_FACTOR;
     }
 
     auto uct_compare(TreeNode *a, TreeNode *b) -> bool
@@ -200,27 +202,48 @@ class MCTS
 {
 public:
     const int WIN_SCORE = 10;
-    int timeLimit;    // limiter on search time
-    int opponent; // the win score that the opponent wants
-    int reward;   // the win score that the agent wants
+    int timeLimit; // limiter on search time
+    int opponent;  // the win score that the opponent wants
+    int reward;    // the win score that the agent wants
     int nodes = 0;
 
+    MCTS()
+    {
+        MCTS(1);
+    }
     MCTS(int player)
     {
+        MCTS(player, 3);
+    }
+    MCTS(int player, int strength)
+    {
         srand(time(NULL));
-        timeLimit = 3;
+        timeLimit = strength;
         opponent = -player;
         reward = player;
+    }
+
+    void deleteTree(TreeNode *root)
+    {
+        /* first delete the subtrees */
+        for (TreeNode *child : root->children)
+        {
+            deleteTree(child);
+        }
+        /* then delete the node */
+        delete root;
     }
 
     void set_opponent(int i)
     {
         opponent = i;
+        reward = -i;
     }
 
     auto find_best_next_board(State board) -> State
     {
-        
+        nodes = 0;
+        set_opponent(-board.turn);
         // define an end time which will act as a terminating condition
         int end = std::time(0) + timeLimit;
         TreeNode *rootNode = new TreeNode(board);
@@ -242,11 +265,12 @@ public:
             int playoutResult = simulate_playout(nodeToExplore);
             backpropagate(nodeToExplore, playoutResult);
         }
-        TreeNode *winnerNode = rootNode->best_child(opponent);
-        //rootNode->show_child_winrates();
-        rootNode->show_child_visitrates();
-        delete rootNode;
-        return winnerNode->get_state();
+        State out = rootNode->best_child()->get_state();
+        std::cout << "ZERO:\n";
+        std::cout << nodes << " nodes processed.\n";
+        std::cout << "Zero win prediction: " << (int)(rootNode->best_child()->get_winrate() * (100 / WIN_SCORE)) << "%\n";
+        deleteTree(rootNode);
+        return out;
     }
 
     auto select_promising_node(TreeNode *rootNode) -> TreeNode *
@@ -262,13 +286,12 @@ public:
     void expand_node(TreeNode *node)
     {
         std::vector<State> possibleStates = node->get_children_as_states();
-        for (auto &&state : possibleStates)
+        for (State state : possibleStates)
         {
             TreeNode *newNode = new TreeNode(state);
             newNode->set_parent(node);
             newNode->set_player_no(node->get_opponent());
             node->children.push_back(newNode);
-            
         }
     }
 
@@ -289,12 +312,12 @@ public:
     auto simulate_playout(TreeNode *node) -> int
     {
         nodes++;
-        TreeNode *tempNode = new TreeNode(*node);
-        State tempState = tempNode->get_state();
+        TreeNode tempNode = TreeNode(*node);
+        State tempState = tempNode.get_state();
         int boardStatus = tempState.evaluate();
         if (boardStatus == opponent)
         {
-            tempNode->get_parent()->set_win_score(INT_MIN);
+            node->get_parent()->set_win_score(INT_MIN);
             return boardStatus;
         }
         while (!tempState.is_game_over())
@@ -302,34 +325,22 @@ public:
             tempState.random_play();
         }
         boardStatus = tempState.evaluate();
-        delete tempNode;
         return boardStatus;
     }
 };
 
-class DaftPunk
+class Zero
 {
 public:
     MCTS searchDriver = MCTS(1);
     State node = State();
 
-    DaftPunk()
+    Zero()
     {
-        DaftPunk(3);
+        Zero(3);
     }
-    DaftPunk(int strength)
+    Zero(int strength)
     {
-        if (node.turn == 1)
-        {
-            // ENGINE MOVES FIRST, -1 WAS DEFAULT, KEEP IT THAT WAY
-            searchDriver.set_opponent(-1);
-        }
-        else
-        {
-            // ENGINE MOVES SECOND, FIGURE OUT HOW TO MAKE IT NOT BLUNDER
-            searchDriver.set_opponent(-1);
-        }
-
         searchDriver.timeLimit = strength;
     }
 
@@ -342,13 +353,13 @@ public:
     {
         int pos;
         std::cin >> pos;
-        while (node.pos_filled(pos))
+        while (node.pos_filled(pos - 1))
         {
             print("invalid move.");
             node.show();
             std::cin >> pos;
         }
-        return pos;
+        return pos - 1;
     }
 
     void engine_move()
@@ -378,39 +389,132 @@ auto get_first_player() -> bool
     return player;
 }
 
-// inline void run_negamax_game()
-// {
-//     Istus glyph;
-//     int i;
-//     glyph.node.show();
-//     if (get_first_player())
-//     {
-//         i = glyph.get_player_move();
-//         glyph.node.play(i);
-//         glyph.node.show();
-//     }
-//     while (!glyph.node.is_game_over())
-//     {
-//         glyph.engine_move();
-//         std::cout << "Nodes processed for move: " << glyph.nodes << "\n";
-//         glyph.reset_nodes();
-//         glyph.node.show();
-//         if (glyph.node.is_game_over())
-//             break;
-//         i = glyph.get_player_move();
-//         glyph.node.play(i);
-//         glyph.node.show();
-//     }
-//     glyph.show_result();
-// }
-
-inline void run_mcts_game()
+class Istus
 {
-    std::cout << "seconds per move? ";
-    int TL;
-    std::cin >> TL;
-    DaftPunk glyph = DaftPunk(TL);
-    int i;
+public:
+    State node;
+    int nodes;
+    int timeLimit;
+
+    Istus()
+    {
+        Istus(3);
+    }
+    Istus(int TL)
+    {
+        timeLimit = TL;
+    }
+
+    auto negamax(int depth = 10, int colour = 1, int a = -2, int b = 2) -> int //WORKING
+    {
+        if (depth < 1)
+        {
+            nodes++;
+            return colour * node.evaluate();
+        }
+
+        if (node.is_game_over())
+        {
+            nodes++;
+            return colour * node.evaluate() * depth;
+        }
+        int score;
+
+        node.pass_turn();                             // MAKE A NULL MOVE
+        score = -negamax(depth - 3, -colour, -b, -a); // PERFORM A LIMITED SEARCH
+        node.pass_turn();                             // UNMAKE NULL MOVE
+        if (score > a)
+            a = score;
+        if (a >= b)
+            return a;
+
+        for (auto &&move : node.legal_moves())
+        {
+            node.play(move);
+            nodes += 1;
+            score = -negamax(depth - 1, -colour, -b, -a);
+            node.unplay();
+
+            if (score >= b)
+                return b;
+            if (score > a)
+                a = score;
+        }
+
+        return a;
+    }
+
+    void engine_move() //WORKING
+    {
+        nodes = 0;
+        int bestcase = -2;
+        Move bestmove;
+        int d = 0;
+        int end = std::time(0) + timeLimit;
+        while (std::time(0) < end)
+        {
+            bestcase = -2;
+            int loopstart = std::time(0);
+            for (auto &&move : node.legal_moves())
+            {
+                node.play(move);
+                int score = -negamax(d, node.turn);
+                node.unplay();
+                if (bestcase < score)
+                {
+                    bestcase = score;
+                    bestmove = move;
+                }
+            }
+            int t = (std::time(0) - loopstart);
+            d += 1;
+        }
+        std::cout << "ISTUS:\n";
+        std::cout << nodes << " nodes processed.\n";
+        std::cout << "Istus win prediction: " << (int)((1 + bestcase) * (50)) << "%\n";
+        node.play(bestmove);
+    }
+
+    void reset_nodes()
+    {
+        nodes = 0;
+    }
+
+    void show_result()
+    {
+        int r;
+        r = node.evaluate();
+        if (r == 0)
+            std::cout << "1/2-1/2" << '\n';
+        else if (r == 1)
+            std::cout << "1-0" << '\n';
+        else
+            std::cout << "0-1" << '\n';
+    }
+
+    void print(std::string input, std::string end = "\n")
+    {
+        std::cout << input << end;
+    }
+
+    auto get_player_move() -> int
+    {
+        int pos;
+        std::cin >> pos;
+        while (node.pos_filled(pos - 1))
+        {
+            print("invalid move.");
+            node.show();
+            std::cin >> pos;
+        }
+        return pos - 1;
+    }
+};
+
+inline void run_negamax_game(int TL)
+{
+    Istus glyph = Istus(TL);
+    Move i;
     glyph.node.show();
     if (get_first_player())
     {
@@ -421,7 +525,31 @@ inline void run_mcts_game()
     while (!glyph.node.is_game_over())
     {
         glyph.engine_move();
-        std::cout << "Nodes processed for move: " << glyph.searchDriver.nodes << "\n";
+        glyph.reset_nodes();
+        glyph.node.show();
+        if (glyph.node.is_game_over())
+            break;
+        i = glyph.get_player_move();
+        glyph.node.play(i);
+        glyph.node.show();
+    }
+    glyph.show_result();
+}
+
+inline void run_mcts_game(int TL)
+{
+    Zero glyph = Zero(TL);
+    Move i;
+    glyph.node.show();
+    if (get_first_player())
+    {
+        i = glyph.get_player_move();
+        glyph.node.play(i);
+        glyph.node.show();
+    }
+    while (!glyph.node.is_game_over())
+    {
+        glyph.engine_move();
         glyph.searchDriver.nodes = 0;
         glyph.node.show();
         if (glyph.node.is_game_over())
@@ -433,18 +561,57 @@ inline void run_mcts_game()
     glyph.show_result();
 }
 
+inline void selfplay(int TL)
+{
+    Istus minimaxer = Istus(TL);
+    Zero montecarlo = Zero(TL);
+    int eturn;
+    std::cout << "1 for Zero first, -1 for Istus first.\n--> ";
+    std::cin >> eturn;
+    while (!minimaxer.node.is_game_over() && !montecarlo.node.is_game_over())
+    {
+        minimaxer.node.show();
+        if (eturn == -1)
+        {
+            minimaxer.engine_move();
+            montecarlo.node = minimaxer.node;
+        }
+        else
+        {
+            montecarlo.engine_move();
+            minimaxer.node = montecarlo.node;
+        }
+        eturn = -eturn;
+    }
+    minimaxer.node.show();
+    minimaxer.show_result();
+}
+
 int main()
 {
-    std::cout << "Would you like to play against the MCTS engine, or the MINIMAX engine? [0/1]\n--> ";
-    bool ans;
+    std::cout << "Play against Zero [0] | Play against Istus [1] | Watch a self-play game [2]\n--> ";
+    int ans;
     std::cin >> ans;
-    if (ans)
+    std::cout << "seconds per move? ";
+    int TL;
+    std::cin >> TL;
+    switch (ans)
     {
-        //run_negamax_game();
+    case 0:
+        run_mcts_game(TL);
+        break;
+
+    case 1:
+        run_negamax_game(TL);
+        break;
+
+    case 2:
+        selfplay(TL);
+        break;
+
+    default:
+        break;
     }
-    else
-    {
-        run_mcts_game();
-    }
+
     return 0;
 }
