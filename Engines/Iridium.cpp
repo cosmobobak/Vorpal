@@ -7,10 +7,11 @@
 #include <stdlib.h>
 #include "Coin.hpp"
 #include "Glyph.hpp"
+#include "UTTT.hpp"
 
 #define EXP_FACTOR 5
 
-using namespace Coin;
+using namespace UTTT;
 
 class TreeNode
 {
@@ -249,6 +250,7 @@ public:
         TreeNode *rootNode = new TreeNode(board);
         rootNode->set_state(board);
         rootNode->set_player_no(opponent);
+        
         while (std::time(0) < end)
         {
             TreeNode *promisingNode = select_promising_node(rootNode);
@@ -257,6 +259,7 @@ public:
             {
                 expand_node(promisingNode);
             }
+        
             TreeNode *nodeToExplore = promisingNode;
             if (promisingNode->get_children().size() > 0)
             {
@@ -394,13 +397,18 @@ class Istus
 public:
     State node;
     int nodes;
-    int timeLimit;
+    float timeLimit;
+    short d;
+    short bestcase;
+    float end;
+    float t;
+    short score;
 
     Istus()
     {
         Istus(3);
     }
-    Istus(int TL)
+    Istus(float TL)
     {
         timeLimit = TL;
     }
@@ -447,18 +455,19 @@ public:
     void engine_move() //WORKING
     {
         nodes = 0;
-        int bestcase = -2;
+        bestcase = -2;
         Move bestmove;
-        int d = 0;
-        int end = std::time(0) + timeLimit;
-        while (std::time(0) < end)
+        d = 0;
+        
+        end = std::time(0) + timeLimit;
+        while (std::time(0) < end && d < 22)
         {
             bestcase = -2;
             int loopstart = std::time(0);
             for (auto &&move : node.legal_moves())
             {
                 node.play(move);
-                int score = -negamax(d, node.turn);
+                score = -negamax(d, node.turn);
                 node.unplay();
                 if (bestcase < score)
                 {
@@ -466,7 +475,7 @@ public:
                     bestmove = move;
                 }
             }
-            int t = (std::time(0) - loopstart);
+            t = (std::time(0) - loopstart);
             d += 1;
         }
         std::cout << "ISTUS:\n";
