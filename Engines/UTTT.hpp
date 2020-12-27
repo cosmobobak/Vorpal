@@ -204,7 +204,7 @@ namespace UTTT
             forcingBoard = square;
         }
 
-        void unplay() // do not unplay on root
+        /*void unplay() // do not unplay on root
         {
             int prevmove = movestack.back();
             int board, square;
@@ -214,7 +214,7 @@ namespace UTTT
             metaposition[board].unplay(square, -turn);
             turn = -turn;
             forcingBoard = square;
-        }
+        }*/
 
         auto board_won(int board) -> bool
         {
@@ -254,11 +254,11 @@ namespace UTTT
         auto evaluate() -> int
         {
             // check first diagonal
-            if (pos_filled(0) && pos_filled(4) && pos_filled(8))
+            if (board_over(0) && board_over(4) && board_over(8))
             {
-                if (player_at(0) == player_at(4) && player_at(4) == player_at(8))
+                if (winner_of_board(0) == winner_of_board(4) && winner_of_board(4) == winner_of_board(8))
                 {
-                    if (player_at(0))
+                    if (winner_of_board(0))
                         return 1;
                     else
                         return -1;
