@@ -214,7 +214,7 @@ namespace UTTT
             forcingBoard = square;
         }
 
-        void unplay() // do not unplay on root
+        /*void unplay() // do not unplay on root
         {
             int prevmove = movestack.back();
             int board, square;
@@ -224,7 +224,7 @@ namespace UTTT
             metaposition[board].unplay(square, -turn);
             turn = -turn;
             forcingBoard = square;
-        }
+        }*/
 
         auto board_won(int board) -> bool
         {
