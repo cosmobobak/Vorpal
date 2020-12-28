@@ -11,7 +11,7 @@
 
 #define EXP_FACTOR 5
 
-using namespace Glyph;
+using namespace UTTT;
 
 class TreeNode
 {
@@ -566,8 +566,16 @@ inline void run_mcts_game(int TL)
         if (glyph.node.is_game_over())
             break;
         i = glyph.get_player_move();
-        glyph.node.play(i);
-        glyph.node.show();
+        if (i == -1){
+            glyph.node.unplay();
+            glyph.node.unplay();
+            i = glyph.get_player_move();
+            glyph.node.play(i);
+            glyph.node.show();
+        }else{
+            glyph.node.play(i);
+            glyph.node.show();
+        }
     }
     glyph.show_result();
 }

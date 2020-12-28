@@ -175,6 +175,7 @@ namespace UTTT
         int forcingBoard;
         int turn;
         std::vector<int> movestack;
+        std::vector<int> forcingstack;
 
         State()
         {
@@ -183,6 +184,7 @@ namespace UTTT
                 metaposition[i] = Board::SubState();
             }
             forcingBoard = -1;
+            forcingstack.push_back(forcingBoard);
             turn = 1;
         }
         State(UTTT::State *inputState)
@@ -212,19 +214,21 @@ namespace UTTT
             movestack.push_back(i);
             turn = -turn;
             forcingBoard = square;
+            forcingstack.push_back(forcingBoard);
         }
 
-        /*void unplay() // do not unplay on root
+        void unplay() // do not unplay on root
         {
             int prevmove = movestack.back();
             int board, square;
             board = prevmove / 9;
             square = prevmove % 9;
             movestack.pop_back();
-            metaposition[board].unplay(square, -turn);
+            metaposition[board].unplay(square, turn);
             turn = -turn;
-            forcingBoard = square;
-        }*/
+            forcingstack.pop_back();
+            forcingBoard = forcingstack.back();
+        }
 
         auto board_won(int board) -> bool
         {
