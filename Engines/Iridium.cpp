@@ -11,7 +11,7 @@
 
 #define EXP_FACTOR 5
 
-using namespace UTTT;
+using namespace Glyph;
 
 class TreeNode
 {
@@ -250,7 +250,7 @@ public:
         TreeNode *rootNode = new TreeNode(board);
         rootNode->set_state(board);
         rootNode->set_player_no(opponent);
-        
+
         while (std::time(0) < end)
         {
             TreeNode *promisingNode = select_promising_node(rootNode);
@@ -259,7 +259,7 @@ public:
             {
                 expand_node(promisingNode);
             }
-        
+
             TreeNode *nodeToExplore = promisingNode;
             if (promisingNode->get_children().size() > 0)
             {
@@ -354,9 +354,10 @@ public:
 
     auto get_player_move() -> int
     {
+        std::vector<Move> legals = node.legal_moves();
         int pos;
         std::cin >> pos;
-        while (node.pos_filled(pos - 1))
+        while (std::none_of(legals.begin(), legals.end(), [pos](Move m) { return m == (pos - 1); }))
         {
             print("invalid move.");
             node.show();
@@ -458,7 +459,7 @@ public:
         bestcase = -2;
         Move bestmove;
         d = 0;
-        
+
         end = std::time(0) + timeLimit;
         while (std::time(0) < end && d < 22)
         {
@@ -508,9 +509,10 @@ public:
 
     auto get_player_move() -> int
     {
+        std::vector<Move> legals = node.legal_moves();
         int pos;
         std::cin >> pos;
-        while (node.pos_filled(pos - 1))
+        while (std::none_of(legals.begin(), legals.end(), [pos](Move m) { return m == (pos - 1); }))
         {
             print("invalid move.");
             node.show();
