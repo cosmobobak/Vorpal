@@ -4,6 +4,7 @@
 #include <ctime>
 #include <climits>
 #include <cmath>
+#include <chrono>
 #include <stdlib.h>
 #include "Coin.hpp"
 #include "Glyph.hpp"
@@ -144,6 +145,16 @@ public:
         return children.at(std::distance(children.begin(), result));
     }
 
+    auto best_child_as_move() -> Move
+    {
+        std::vector<TreeNode *>::iterator result;
+        //show();
+        result = std::max_element(
+            children.begin(), children.end(),
+            [](TreeNode *a, TreeNode *b) { return (a->get_visit_count() < b->get_visit_count()); });
+        return board.legal_moves().at(std::distance(children.begin(), result));
+    }
+
     void show_child_winrates()
     {
         for (auto &&child : children)
@@ -246,12 +257,13 @@ public:
         nodes = 0;
         set_opponent(-board.turn);
         // define an end time which will act as a terminating condition
-        int end = std::time(0) + timeLimit;
+        auto end = std::chrono::steady_clock::now();
+        end += std::chrono::milliseconds(timeLimit);
         TreeNode *rootNode = new TreeNode(board);
         rootNode->set_state(board);
         rootNode->set_player_no(opponent);
 
-        while (std::time(0) < end)
+        while (std::chrono::steady_clock::now() < end)
         {
             TreeNode *promisingNode = select_promising_node(rootNode);
 
@@ -272,6 +284,8 @@ public:
         std::cout << "ZERO:\n";
         std::cout << nodes << " nodes processed.\n";
         std::cout << "Zero win prediction: " << (int)(rootNode->best_child()->get_winrate() * (100 / WIN_SCORE)) << "%\n";
+        rootNode->show_child_visitrates();
+        std::cout << '\n';
         deleteTree(rootNode);
         return out;
     }
@@ -335,12 +349,12 @@ public:
 class Zero
 {
 public:
-    MCTS searchDriver = MCTS(1);
+    MCTS searchDriver = MCTS();
     State node = State();
 
     Zero()
     {
-        Zero(3);
+        Zero(99);
     }
     Zero(int strength)
     {
@@ -384,32 +398,24 @@ public:
     }
 };
 
-auto get_first_player() -> bool
-{
-    bool player;
-    std::cout << "Is the human player going first? [1/0]"
-              << "\n";
-    std::cin >> player;
-    return player;
-}
+// Possible RAVE improvement: use a long search to generate MCTS values for each starting square, use them as a heuristic starter.
+// UCT becomes (value) + (exploration) + (heuristic value / rollouts)
 
 class Istus
 {
 public:
     State node;
     int nodes;
-    float timeLimit;
+    int timeLimit;
     short d;
     short bestcase;
-    float end;
-    float t;
     short score;
 
     Istus()
     {
-        Istus(3);
+        Istus(99);
     }
-    Istus(float TL)
+    Istus(int TL)
     {
         timeLimit = TL;
     }
@@ -460,11 +466,11 @@ public:
         Move bestmove;
         d = 0;
 
-        end = std::time(0) + timeLimit;
-        while (std::time(0) < end && d < 22)
+        auto end = std::chrono::steady_clock::now();
+        end += std::chrono::milliseconds(timeLimit);
+        while (std::chrono::steady_clock::now() < end && d < 22)
         {
             bestcase = -2;
-            int loopstart = std::time(0);
             for (auto &&move : node.legal_moves())
             {
                 node.play(move);
@@ -476,7 +482,6 @@ public:
                     bestmove = move;
                 }
             }
-            t = (std::time(0) - loopstart);
             d += 1;
         }
         std::cout << "ISTUS:\n";
@@ -521,6 +526,15 @@ public:
         return pos - 1;
     }
 };
+
+auto get_first_player() -> bool
+{
+    bool player;
+    std::cout << "Is the human player going first? [1/0]"
+              << "\n";
+    std::cin >> player;
+    return player;
+}
 
 inline void run_negamax_game(int TL)
 {
@@ -582,36 +596,41 @@ inline void run_mcts_game(int TL)
 
 inline void selfplay(int TL)
 {
-    Istus minimaxer = Istus(TL);
-    Zero montecarlo = Zero(TL);
+    Zero engine1 = Zero(TL);
+    Zero engine2 = Zero(TL);
     int eturn;
     std::cout << "1 for Zero first, -1 for Istus first.\n--> ";
     std::cin >> eturn;
-    while (!minimaxer.node.is_game_over() && !montecarlo.node.is_game_over())
+    while (!engine1.node.is_game_over() && !engine2.node.is_game_over())
     {
-        minimaxer.node.show();
+        engine1.node.show();
         if (eturn == -1)
         {
-            minimaxer.engine_move();
-            montecarlo.node = minimaxer.node;
+            engine1.engine_move();
+            engine2.node = engine1.node;
         }
         else
         {
-            montecarlo.engine_move();
-            minimaxer.node = montecarlo.node;
+            engine2.engine_move();
+            engine1.node = engine2.node;
         }
         eturn = -eturn;
     }
-    minimaxer.node.show();
-    minimaxer.show_result();
+    engine1.node.show();
+    engine1.show_result();
 }
 
 int main()
 {
+    // Zero engine4 = Zero(60000);
+    // engine4.node.show();
+    // std::cout << "Search starting!\n";
+    // engine4.engine_move();
+
     std::cout << "Play against Zero [0] | Play against Istus [1] | Watch a self-play game [2]\n--> ";
     int ans;
     std::cin >> ans;
-    std::cout << "seconds per move? ";
+    std::cout << "milliseconds per move? ";
     int TL;
     std::cin >> TL;
     switch (ans)

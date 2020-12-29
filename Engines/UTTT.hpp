@@ -307,7 +307,34 @@ namespace UTTT
                     }
                 }
             }
-            return 0;
+            int xwon = 0;
+            int owon = 0;
+            for (int i = 0; i < 9; i++)
+            {
+                if (board_over(i))
+                {
+                    if (winner_of_board(i))
+                    {
+                        xwon++;
+                    }
+                    else
+                    {
+                        owon++;
+                    }
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+            if (xwon > owon)
+            {
+                return 1;
+            }
+            else
+            {
+                return -1;
+            }
         }
 
         void pass_turn()
@@ -359,7 +386,7 @@ namespace UTTT
 
         auto is_game_over() -> bool
         {
-            return (evaluate() != 0) || is_full() || legal_moves().size() == 0;
+            return (evaluate() != 0) || legal_moves().size() == 0;
         }
 
         auto legal_moves() -> std::vector<int>
