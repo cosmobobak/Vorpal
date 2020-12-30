@@ -188,5 +188,10 @@ namespace Glyph
             }
             play(move);
         }
+
+        auto heuristic_value() -> int
+        {
+            return 0;
+        }
     };
 } // namespace Glyph

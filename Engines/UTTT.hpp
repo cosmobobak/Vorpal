@@ -3,13 +3,12 @@
 
 namespace Board
 {
-#define Move int
+#define Move short
 
     class SubState
     {
     public:
-        int position[2] = {0b000000000, 0b000000000};
-        std::vector<int> movestack;
+        short position[2] = {0b000000000, 0b000000000};
 
         void reset()
         {
@@ -17,7 +16,7 @@ namespace Board
             position[1] = 0b000000000;
         }
 
-        void play(int i, int turn)
+        void play(short i, short turn)
         {
             // n ^ (1 << k) is a binary XOR where you flip the kth bit of n
             if (turn == 1)
@@ -30,7 +29,7 @@ namespace Board
             }
         }
 
-        void unplay(int prevmove, int turn) // do not unplay on root
+        void unplay(short prevmove, short turn) // do not unplay on root
         {
             if (turn == 1)
             {
@@ -42,19 +41,19 @@ namespace Board
             }
         }
 
-        auto pos_filled(int i) -> bool
+        auto pos_filled(short i) -> bool
         {
-            return (((position[0] | position[1]) & (1L << i)) != 0);
+            return position[0] & (1 << i) || position[1] & (1 << i);
         }
 
-        auto player_at(int i) -> bool //only valid to use if pos_filled() returns true, true = x, false = y
+        auto player_at(short i) -> bool //only valid to use if pos_filled() returns true, true = x, false = y
         {
-            return ((position[0] & (1L << i)) != 0);
+            return (position[0] & (1 << i));
         }
 
         auto is_full() -> bool
         {
-            for (int i = 0; i < 9; i++)
+            for (short i = 0; i < 9; i++)
             {
                 if (!pos_filled(i))
                     return false;
@@ -62,7 +61,7 @@ namespace Board
             return true;
         }
 
-        auto evaluate() -> int
+        auto evaluate() -> short
         {
             // check first diagonal
             if (pos_filled(0) && pos_filled(4) && pos_filled(8))
@@ -87,7 +86,7 @@ namespace Board
                 }
             }
             // check rows
-            for (int i = 0; i < 3; i++)
+            for (short i = 0; i < 3; i++)
             {
                 if (pos_filled(i * 3) && pos_filled(i * 3 + 1) && pos_filled(i * 3 + 2))
                 {
@@ -101,7 +100,7 @@ namespace Board
                 }
             }
             // check columns
-            for (int i = 0; i < 3; i++)
+            for (short i = 0; i < 3; i++)
             {
                 if (pos_filled(i) && pos_filled(i + 3) && pos_filled(i + 6))
                 {
@@ -140,26 +139,11 @@ namespace Board
 
         auto is_board_dead() -> bool
         {
-            return (evaluate() != 0) || is_full();
-        }
-
-        auto get_square_as_char(int square) -> char
-        {
-            if (!pos_filled(square))
+            if (is_full())
             {
-                return '.';
+                return true;
             }
-            else
-            {
-                if (player_at(square))
-                {
-                    return 'X';
-                }
-                else
-                {
-                    return 'O';
-                }
-            }
+            return evaluate(); // cast to bool
         }
     };
 } // namespace Board
@@ -172,14 +156,14 @@ namespace UTTT
     {
     public:
         Board::SubState metaposition[9];
-        int forcingBoard;
-        int turn;
-        std::vector<int> movestack;
-        std::vector<int> forcingstack;
+        short forcingBoard;
+        short turn;
+        std::vector<short> movestack;
+        std::vector<short> forcingstack;
 
         State()
         {
-            for (int i = 0; i < 9; i++)
+            for (short i = 0; i < 9; i++)
             {
                 metaposition[i] = Board::SubState();
             }
@@ -189,7 +173,7 @@ namespace UTTT
         }
         State(UTTT::State *inputState)
         {
-            for (int i = 0; i < 9; i++)
+            for (short i = 0; i < 9; i++)
             {
                 metaposition[i] = inputState->metaposition[i];
             }
@@ -205,9 +189,9 @@ namespace UTTT
             }
         }
 
-        void play(int i)
+        void play(short i)
         {
-            int board, square;
+            short board, square;
             board = i / 9;
             square = i % 9;
             metaposition[board].play(square, turn);
@@ -219,8 +203,8 @@ namespace UTTT
 
         void unplay() // do not unplay on root
         {
-            int prevmove = movestack.back();
-            int board, square;
+            short prevmove = movestack.back();
+            short board, square;
             board = prevmove / 9;
             square = prevmove % 9;
             movestack.pop_back();
@@ -230,24 +214,24 @@ namespace UTTT
             forcingBoard = forcingstack.back();
         }
 
-        auto board_won(int board) -> bool
+        auto board_won(short board) -> bool
         {
             return metaposition[board].evaluate() != 0;
         }
 
-        auto board_over(int board) -> bool
+        auto board_over(short board) -> bool
         {
             return metaposition[board].is_board_dead();
         }
 
-        auto winner_of_board(int board) -> bool //only valid to use if pos_filled() returns true, true = x, false = y
+        auto winner_of_board(short board) -> bool //only valid to use if pos_filled() returns true, true = x, false = y
         {
             return metaposition[board].evaluate() == 1;
         }
 
         auto is_full() -> bool
         {
-            for (int i = 0; i < 9; i++)
+            for (short i = 0; i < 9; i++)
             {
                 if (!board_over(i))
                     return false;
@@ -255,7 +239,7 @@ namespace UTTT
             return true;
         }
 
-        auto evaluate() -> int
+        auto evaluate() -> short
         {
             // check first diagonal
             if (board_over(0) && board_over(4) && board_over(8))
@@ -280,7 +264,7 @@ namespace UTTT
                 }
             }
             // check rows
-            for (int i = 0; i < 3; i++)
+            for (short i = 0; i < 3; i++)
             {
                 if (board_over(i * 3) && board_over(i * 3 + 1) && board_over(i * 3 + 2))
                 {
@@ -294,7 +278,7 @@ namespace UTTT
                 }
             }
             // check columns
-            for (int i = 0; i < 3; i++)
+            for (short i = 0; i < 3; i++)
             {
                 if (board_over(i) && board_over(i + 3) && board_over(i + 6))
                 {
@@ -307,9 +291,9 @@ namespace UTTT
                     }
                 }
             }
-            int xwon = 0;
-            int owon = 0;
-            for (int i = 0; i < 9; i++)
+            short xwon = 0;
+            short owon = 0;
+            for (short i = 0; i < 9; i++)
             {
                 if (board_over(i))
                 {
@@ -342,69 +326,31 @@ namespace UTTT
             turn = -turn;
         }
 
-        void show()
-        {
-            for (int x = 0; x < 3; x++)
-            {
-                for (int y = 0; y < 3; y++)
-                {
-                    if (board_over(x * 3 + y))
-                    {
-                        if (winner_of_board(x * 3 + y))
-                            std::cout << "X ";
-                        else
-                            std::cout << "0 ";
-                    }
-                    else
-                        std::cout << ". ";
-                }
-                std::cout << "\n";
-            }
-            std::cout << "\n";
-            int board, square;
-            std::vector<int> ordering = {
-                0, 1, 2, 9, 10, 11, 18, 19, 20, 3, 4, 5, 12, 13, 14, 21, 22, 23, 6, 7, 8, 15, 16, 17, 24, 25, 26, 27, 28, 29, 36, 37, 38, 45, 46, 47, 30, 31, 32, 39, 40, 41, 48, 49, 50, 33, 34, 35, 42, 43, 44, 51, 52, 53, 54, 55, 56, 63, 64, 65, 72, 73, 74, 57, 58, 59, 66, 67, 68, 75, 76, 77, 60, 61, 62, 69, 70, 71, 78, 79, 80};
-            int counter = 0;
-            std::string linebreak = " |-----------------------|\n";
-
-            for (int i : ordering)
-            {
-                board = i / 9;
-                square = i % 9;
-                if (counter % 9 == 0 && i != 0)
-                    std::cout << " |\n";
-                if (i == 0 || i == 27 || i == 54)
-                    std::cout << linebreak;
-                if (counter % 3 == 0)
-                    std::cout << " |";
-                std::cout << ' ' << metaposition[board].get_square_as_char(square);
-                counter++;
-            }
-            std::cout << " |\n";
-            std::cout << linebreak << "\n\n";
-        }
-
         auto is_game_over() -> bool
         {
-            return (evaluate() != 0) || legal_moves().size() == 0;
+            if (legal_moves().size() == 0)
+            {
+                return true;
+            }
+            return (evaluate() != 0);
         }
 
-        auto legal_moves() -> std::vector<int>
+        auto legal_moves() -> std::vector<Move>
         {
-            std::vector<int> moves;
+            std::vector<Move> moves;
             // only allow the forcingBoard
             if (metaposition[forcingBoard].is_board_dead())
             {
                 forcingBoard = -1;
             }
-            
-            for (int board = 0; board < 9; board++)
+
+            for (short board = 0; board < 9; board++)
             {
                 if ((board != forcingBoard && forcingBoard != -1) || metaposition[board].is_board_dead())
                 {
                     continue;
                 }
-                for (int square = 0; square < 9; square++)
+                for (short square = 0; square < 9; square++)
                 {
                     if (!metaposition[board].pos_filled(square))
                     {
@@ -417,9 +363,8 @@ namespace UTTT
 
         void random_play()
         {
-            std::vector<int> moves = legal_moves();
-            int move = rand() % moves.size();
-            play(moves[move]);
+            std::vector<Move> moves = legal_moves();
+            play(moves[rand() % moves.size()]);
         }
     };
 } // namespace UTTT

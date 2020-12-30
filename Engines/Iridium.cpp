@@ -19,7 +19,7 @@ class TreeNode
 public:
     int winScore = 0;
     int visits = 0;
-    int playerNo;
+    short playerNo;
     State board;
     TreeNode *parent = nullptr;
     std::vector<TreeNode *> children;
@@ -29,17 +29,17 @@ public:
         this->board = board;
     }
 
-    void set_player_no(int playerNo)
+    void set_player_no(short playerNo)
     {
         this->playerNo = playerNo;
     }
 
-    auto get_player_no() -> int
+    auto get_player_no() -> short
     {
         return playerNo;
     }
 
-    auto get_opponent() -> int
+    auto get_opponent() -> short
     {
         return -playerNo;
     }
@@ -125,9 +125,7 @@ public:
 
     auto random_child() -> TreeNode *
     {
-        int noOfPossibleMoves = children.size();
-        int selectRandom = rand() % noOfPossibleMoves;
-        return children[selectRandom];
+        return children[rand() % children.size()];
     }
 
     auto get_winrate() -> double
@@ -176,8 +174,7 @@ public:
 
 namespace UCT
 {
-    auto uct_value(
-        int totalVisit, double nodeWinScore, int nodeVisit) -> double
+    auto uct_value(int totalVisit, double nodeWinScore, int nodeVisit) -> double
     {
         if (nodeVisit == 0)
         {
@@ -213,21 +210,22 @@ namespace UCT
 class MCTS
 {
 public:
-    const int WIN_SCORE = 10;
-    int timeLimit; // limiter on search time
-    int opponent;  // the win score that the opponent wants
-    int reward;    // the win score that the agent wants
+    const short WIN_SCORE = 10;
+    short timeLimit; // limiter on search time
+    short opponent;  // the win score that the opponent wants
+    short reward;    // the win score that the agent wants
     int nodes = 0;
+    TreeNode *preservedNode = nullptr;
 
     MCTS()
     {
         MCTS(1);
     }
-    MCTS(int player)
+    MCTS(short player)
     {
         MCTS(player, 3);
     }
-    MCTS(int player, int strength)
+    MCTS(short player, short strength)
     {
         srand(time(NULL));
         timeLimit = strength;
@@ -246,11 +244,19 @@ public:
         delete root;
     }
 
-    void set_opponent(int i)
+    void set_opponent(short i)
     {
         opponent = i;
         reward = -i;
     }
+
+    // auto prune(TreeNode * parent, State target) -> TreeNode *
+    // {
+    //     for (auto &&childState : parent->get_children_as_states())
+    //     {
+            
+    //     }
+    // }
 
     auto find_best_next_board(State board) -> State
     {
@@ -259,7 +265,13 @@ public:
         // define an end time which will act as a terminating condition
         auto end = std::chrono::steady_clock::now();
         end += std::chrono::milliseconds(timeLimit);
-        TreeNode *rootNode = new TreeNode(board);
+        TreeNode *rootNode;
+        //if (preservedNode){
+            //rootNode = preservedNode;
+            //rootNode = prune(rootNode, board);
+        //}else{
+            rootNode = new TreeNode(board);
+        //}
         rootNode->set_state(board);
         rootNode->set_player_no(opponent);
 
@@ -277,15 +289,20 @@ public:
             {
                 nodeToExplore = promisingNode->random_child();
             }
-            int playoutResult = simulate_playout(nodeToExplore);
+            short playoutResult = simulate_playout(nodeToExplore);
             backpropagate(nodeToExplore, playoutResult);
         }
         State out = rootNode->best_child()->get_state();
-        std::cout << "ZERO:\n";
-        std::cout << nodes << " nodes processed.\n";
-        std::cout << "Zero win prediction: " << (int)(rootNode->best_child()->get_winrate() * (100 / WIN_SCORE)) << "%\n";
-        rootNode->show_child_visitrates();
-        std::cout << '\n';
+        std::cerr << "ZERO:\n";
+        std::cerr << nodes << " nodes processed.\n";
+        std::cerr << "Zero win prediction: " << (int)(rootNode->best_child()->get_winrate() * (100 / WIN_SCORE)) << "%\n";
+        short action, sboard, square, row, col;
+        action = rootNode->best_child_as_move();
+        square = action % 9;
+        sboard = action / 9;
+        col = (sboard % 3) * 3 + square % 3;
+        row = (sboard / 3) * 3 + square / 3;
+        std::cout << row << " " << col << std::endl;
         deleteTree(rootNode);
         return out;
     }
@@ -312,7 +329,7 @@ public:
         }
     }
 
-    void backpropagate(TreeNode *nodeToExplore, int winner)
+    void backpropagate(TreeNode *nodeToExplore, short winner)
     {
         TreeNode *tempNode = nodeToExplore;
         while (tempNode)
@@ -326,12 +343,12 @@ public:
         }
     }
 
-    auto simulate_playout(TreeNode *node) -> int
+    auto simulate_playout(TreeNode *node) -> short
     {
         nodes++;
         TreeNode tempNode = TreeNode(*node);
         State tempState = tempNode.get_state();
-        int boardStatus = tempState.evaluate();
+        short boardStatus = tempState.evaluate();
         if (boardStatus == opponent)
         {
             node->get_parent()->set_win_score(INT_MIN);
@@ -356,7 +373,7 @@ public:
     {
         Zero(99);
     }
-    Zero(int strength)
+    Zero(short strength)
     {
         searchDriver.timeLimit = strength;
     }
@@ -387,19 +404,24 @@ public:
 
     void show_result()
     {
-        int r;
-        r = node.evaluate();
-        if (r == 0)
+        switch (node.evaluate())
+        {
+        case 0:
             std::cout << "1/2-1/2" << '\n';
-        else if (r == 1)
+            break;
+        case 1:
             std::cout << "1-0" << '\n';
-        else
+            break;
+        default:
             std::cout << "0-1" << '\n';
+            break;
+        }
     }
 };
 
-// Possible RAVE improvement: use a long search to generate MCTS values for each starting square, use them as a heuristic starter.
-// UCT becomes (value) + (exploration) + (heuristic value / rollouts)
+// Possible heuristic improvement: use a long search to generate MCTS values for each starting square, use them as a heuristic starter.
+// The RAVE approach makes this heuristic value = some sort of aggregate score of the move on parent nodes.
+// UCT becomes (simulation value / rollouts) + (heuristic value / rollouts) + (exploration factor)
 
 class Istus
 {
@@ -580,13 +602,16 @@ inline void run_mcts_game(int TL)
         if (glyph.node.is_game_over())
             break;
         i = glyph.get_player_move();
-        if (i == -1){
+        if (i == -1)
+        {
             glyph.node.unplay();
             glyph.node.unplay();
             i = glyph.get_player_move();
             glyph.node.play(i);
             glyph.node.show();
-        }else{
+        }
+        else
+        {
             glyph.node.play(i);
             glyph.node.show();
         }

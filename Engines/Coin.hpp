@@ -1,6 +1,8 @@
 #include <iostream>
 #include <vector>
 
+int weights[] = {1, 2, 3, 4, 3, 2, 1};
+
 namespace Coin
 {
 
@@ -299,6 +301,18 @@ namespace Coin
             {
                 return false;
             }
+        }
+
+        auto heuristic_value() -> int
+        {
+            int val = 0;
+            for (short row = 0; row < 6; row++)
+            {
+                for (short i = 0; i < 7; i++){
+                    val += node[row][i] * weights[i];
+                }
+            }
+            return -(val * 10); // use some sort of central weighting approach
         }
     };
 } // namespace Coin
