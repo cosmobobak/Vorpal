@@ -145,6 +145,25 @@ namespace Board
             }
             return evaluate(); // cast to bool
         }
+
+        auto get_square_as_char(int square) -> char
+        {
+            if (!pos_filled(square))
+            {
+                return '.';
+            }
+            else
+            {
+                if (player_at(square))
+                {
+                    return 'X';
+                }
+                else
+                {
+                    return 'O';
+                }
+            }
+        }
     };
 } // namespace Board
 
@@ -335,6 +354,47 @@ namespace UTTT
             return (evaluate() != 0);
         }
 
+        void show()
+        {
+            for (int x = 0; x < 3; x++)
+            {
+                for (int y = 0; y < 3; y++)
+                {
+                    if (board_over(x * 3 + y))
+                    {
+                        if (winner_of_board(x * 3 + y))
+                            std::cout << "X ";
+                        else
+                            std::cout << "0 ";
+                    }
+                    else
+                        std::cout << ". ";
+                }
+                std::cout << "\n";
+            }
+            std::cout << "\n";
+            int board, square;
+            std::vector<int> ordering = {
+                0, 1, 2, 9, 10, 11, 18, 19, 20, 3, 4, 5, 12, 13, 14, 21, 22, 23, 6, 7, 8, 15, 16, 17, 24, 25, 26, 27, 28, 29, 36, 37, 38, 45, 46, 47, 30, 31, 32, 39, 40, 41, 48, 49, 50, 33, 34, 35, 42, 43, 44, 51, 52, 53, 54, 55, 56, 63, 64, 65, 72, 73, 74, 57, 58, 59, 66, 67, 68, 75, 76, 77, 60, 61, 62, 69, 70, 71, 78, 79, 80};
+            int counter = 0;
+            std::string linebreak = " |-----------------------|\n";
+            for (int i : ordering)
+            {
+                board = i / 9;
+                square = i % 9;
+                if (counter % 9 == 0 && i != 0)
+                    std::cout << " |\n";
+                if (i == 0 || i == 27 || i == 54)
+                    std::cout << linebreak;
+                if (counter % 3 == 0)
+                    std::cout << " |";
+                std::cout << ' ' << metaposition[board].get_square_as_char(square);
+                counter++;
+            }
+            std::cout << " |\n";
+            std::cout << linebreak << "\n\n";
+        }
+
         auto legal_moves() -> std::vector<Move>
         {
             std::vector<Move> moves;
@@ -367,6 +427,23 @@ namespace UTTT
             play(moves[rand() % moves.size()]);
         }
     };
+
+    bool operator==(State a, State b){
+        if (a.forcingBoard != b.forcingBoard)
+            return false;
+        if (a.turn != b.turn)
+            return false;
+        for (short i = 0; i < 9; i++){
+            if (a.metaposition[i].position[0] != b.metaposition[i].position[0])
+                return false;
+            if (a.metaposition[i].position[1] != b.metaposition[i].position[1])
+                return false;
+        }
+        if (a.forcingstack != b.forcingstack){
+            return false;
+        }
+        return a.movestack == b.movestack;
+    }
 } // namespace UTTT
 
 // int main()

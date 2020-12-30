@@ -5,7 +5,8 @@
 #include <climits>
 #include <cmath>
 #include <chrono>
-#include <stdlib.h>
+#include <cstdlib>
+#include <cassert>
 #include "Coin.hpp"
 #include "Glyph.hpp"
 #include "UTTT.hpp"
@@ -211,9 +212,10 @@ class MCTS
 {
 public:
     const short WIN_SCORE = 10;
-    short timeLimit; // limiter on search time
-    short opponent;  // the win score that the opponent wants
-    short reward;    // the win score that the agent wants
+    short timeLimit;     // limiter on search time
+    short opponent;      // the win score that the opponent wants
+    short reward;        // the win score that the agent wants
+    bool memsafe = true; // dictates whether we preserve a part of the tree across moves
     int nodes = 0;
     TreeNode *preservedNode = nullptr;
 
@@ -250,13 +252,25 @@ public:
         reward = -i;
     }
 
-    // auto prune(TreeNode * parent, State target) -> TreeNode *
-    // {
-    //     for (auto &&childState : parent->get_children_as_states())
-    //     {
-            
-    //     }
-    // }
+    auto prune(TreeNode *parent, State target) -> TreeNode *
+    {
+        TreeNode *out = nullptr;
+        bool found = false;
+        for (TreeNode *child : parent->get_children())
+        {
+            if (!found && child->get_state() == target)
+            {
+                out = child;
+                found = true;
+            }
+            else
+                deleteTree(child);
+        }
+        if (out)
+            out->set_parent(nullptr);
+        delete parent;
+        return out;
+    }
 
     auto find_best_next_board(State board) -> State
     {
@@ -266,14 +280,22 @@ public:
         auto end = std::chrono::steady_clock::now();
         end += std::chrono::milliseconds(timeLimit);
         TreeNode *rootNode;
-        //if (preservedNode){
-            //rootNode = preservedNode;
-            //rootNode = prune(rootNode, board);
-        //}else{
+        if (preservedNode)
+        {
+            rootNode = prune(preservedNode, board);
+            if (!rootNode)
+            {
+                rootNode = new TreeNode(board);
+                rootNode->set_state(board);
+                rootNode->set_player_no(opponent);
+            }
+        }
+        else
+        {
             rootNode = new TreeNode(board);
-        //}
-        rootNode->set_state(board);
-        rootNode->set_player_no(opponent);
+            rootNode->set_state(board);
+            rootNode->set_player_no(opponent);
+        }
 
         while (std::chrono::steady_clock::now() < end)
         {
@@ -303,7 +325,14 @@ public:
         col = (sboard % 3) * 3 + square % 3;
         row = (sboard / 3) * 3 + square / 3;
         std::cout << row << " " << col << std::endl;
-        deleteTree(rootNode);
+        if (!memsafe)
+        {
+            deleteTree(rootNode);
+        }
+        else
+        {
+            preservedNode = prune(rootNode, out);
+        }
         return out;
     }
 
@@ -412,8 +441,11 @@ public:
         case 1:
             std::cout << "1-0" << '\n';
             break;
-        default:
+        case -1:
             std::cout << "0-1" << '\n';
+            break;
+        default:
+            std::cerr << "evaluate returned non-zero";
             break;
         }
     }
