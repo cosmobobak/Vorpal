@@ -11,7 +11,7 @@
 #include "Glyph.hpp"
 #include "UTTT.hpp"
 
-#define EXP_FACTOR 5
+constexpr auto EXP_FACTOR = 5;
 
 using namespace UTTT;
 
@@ -279,18 +279,10 @@ public:
         // define an end time which will act as a terminating condition
         auto end = std::chrono::steady_clock::now();
         end += std::chrono::milliseconds(timeLimit);
-        TreeNode *rootNode;
+        TreeNode *rootNode = nullptr;
         if (preservedNode)
-        {
             rootNode = prune(preservedNode, board);
-            if (!rootNode)
-            {
-                rootNode = new TreeNode(board);
-                rootNode->set_state(board);
-                rootNode->set_player_no(opponent);
-            }
-        }
-        else
+        if (!rootNode)
         {
             rootNode = new TreeNode(board);
             rootNode->set_state(board);
@@ -302,15 +294,13 @@ public:
             TreeNode *promisingNode = select_promising_node(rootNode);
 
             if (!promisingNode->get_state().is_game_over())
-            {
                 expand_node(promisingNode);
-            }
 
             TreeNode *nodeToExplore = promisingNode;
+
             if (promisingNode->get_children().size() > 0)
-            {
                 nodeToExplore = promisingNode->random_child();
-            }
+
             short playoutResult = simulate_playout(nodeToExplore);
             backpropagate(nodeToExplore, playoutResult);
         }

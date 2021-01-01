@@ -53,12 +53,7 @@ namespace Board
 
         auto is_full() -> bool
         {
-            for (short i = 0; i < 9; i++)
-            {
-                if (!pos_filled(i))
-                    return false;
-            }
-            return true;
+            return position[0] + position[1] == 0b111111111;
         }
 
         auto evaluate() -> short
