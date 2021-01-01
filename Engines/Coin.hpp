@@ -6,7 +6,7 @@ int weights[] = {1, 2, 3, 4, 3, 2, 1};
 namespace Coin
 {
 
-#define Move int
+#define Move short
 
     class State
     {
@@ -65,7 +65,7 @@ namespace Coin
             std::cout << '\n';
         }
 
-        auto legal_moves() -> std::vector<int>
+        auto legal_moves() -> std::vector<Move>
         {
             std::vector<Move> moves;
             int ordering[] = {3, 4, 2, 5, 1, 6, 0};

@@ -72,16 +72,18 @@ public:
         return children;
     }
 
-    auto get_children_as_states() -> std::vector<State>
+    void expand()
     {
-        std::vector<State> childStates;
+        children.reserve(board.num_legal_moves()); // do this in the constructor, but only if you figure out how to make arrays work
         for (auto &&move : board.legal_moves())
         {
             board.play(move);
-            childStates.push_back(board);
+            TreeNode *newNode = new TreeNode(board);
+            newNode->set_parent(this);
+            newNode->set_player_no(get_opponent());
+            children.push_back(newNode);
             board.unplay();
         }
-        return childStates;
     }
 
     auto get_win_score() -> int
@@ -137,7 +139,8 @@ public:
     auto best_child() -> TreeNode *
     {
         std::vector<TreeNode *>::iterator result;
-        //show();
+        // if(children.size() == 0) 
+        //     std::cout << "error 1\n";
         result = std::max_element(
             children.begin(), children.end(),
             [](TreeNode *a, TreeNode *b) { return (a->get_visit_count() < b->get_visit_count()); });
@@ -147,7 +150,8 @@ public:
     auto best_child_as_move() -> Move
     {
         std::vector<TreeNode *>::iterator result;
-        //show();
+        // if (board.legal_moves().size() == 0)
+        //     std::cout << "error 2\n";
         result = std::max_element(
             children.begin(), children.end(),
             [](TreeNode *a, TreeNode *b) { return (a->get_visit_count() < b->get_visit_count()); });
@@ -288,7 +292,7 @@ public:
             rootNode->set_state(board);
             rootNode->set_player_no(opponent);
         }
-
+        expand_node(rootNode);
         while (std::chrono::steady_clock::now() < end)
         {
             TreeNode *promisingNode = select_promising_node(rootNode);
@@ -338,14 +342,7 @@ public:
 
     void expand_node(TreeNode *node)
     {
-        std::vector<State> possibleStates = node->get_children_as_states();
-        for (State state : possibleStates)
-        {
-            TreeNode *newNode = new TreeNode(state);
-            newNode->set_parent(node);
-            newNode->set_player_no(node->get_opponent());
-            node->children.push_back(newNode);
-        }
+        node->expand();
     }
 
     void backpropagate(TreeNode *nodeToExplore, short winner)
@@ -651,6 +648,7 @@ inline void selfplay(int TL)
     while (!engine1.node.is_game_over() && !engine2.node.is_game_over())
     {
         engine1.node.show();
+        std::cout << engine1.node.num_legal_moves() << " " << engine1.node.legal_moves().size() << '\n';
         if (eturn == -1)
         {
             engine1.engine_move();

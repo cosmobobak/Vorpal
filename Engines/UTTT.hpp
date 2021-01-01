@@ -1,5 +1,11 @@
 #include <iostream>
 #include <vector>
+#include <bitset>
+
+auto popcount(short bb) -> short
+{
+    return std::bitset<16>(bb).count();
+}
 
 namespace Board
 {
@@ -14,6 +20,11 @@ namespace Board
         {
             position[0] = 0b000000000;
             position[1] = 0b000000000;
+        }
+
+        auto union_bb() -> short
+        {
+            return position[0] | position[1];
         }
 
         void play(short i, short turn)
@@ -388,6 +399,20 @@ namespace UTTT
             }
             std::cout << " |\n";
             std::cout << linebreak << "\n\n";
+        }
+
+        auto num_legal_moves() -> short
+        {
+            if (forcingBoard != -1)
+                return 9 - popcount(metaposition[forcingBoard].union_bb());
+            
+            short cnt = 0;
+            for (short i = 0; i < 9; i++)
+            {
+                if (!metaposition[i].is_board_dead())
+                    cnt += 9 - popcount(metaposition[i].union_bb());
+            }
+            return cnt;
         }
 
         auto legal_moves() -> std::vector<Move>

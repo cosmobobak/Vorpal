@@ -3,7 +3,7 @@
 
 namespace Glyph
 {
-    #define Move int
+    #define Move short
     
     class State
     {
