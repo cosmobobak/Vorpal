@@ -1,19 +1,20 @@
+#pragma GCC optimize("Ofast", "unroll-loops", "omit-frame-pointer", "inline")
+#pragma GCC target("avx")
+
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include <ctime>
 #include <climits>
 #include <cmath>
 #include <chrono>
 #include <cstdlib>
-#include <cassert>
 #include "Coin.hpp"
 #include "Glyph.hpp"
 #include "UTTT.hpp"
 
 constexpr auto EXP_FACTOR = 5;
 
-using namespace UTTT;
+using namespace Glyph;
 
 class TreeNode
 {
@@ -78,10 +79,9 @@ public:
         for (auto &&move : board.legal_moves())
         {
             board.play(move);
-            TreeNode *newNode = new TreeNode(board);
-            newNode->set_parent(this);
-            newNode->set_player_no(get_opponent());
-            children.push_back(newNode);
+            children.push_back(new TreeNode(board));
+            children.back()->set_parent(this);
+            children.back()->set_player_no(get_opponent());
             board.unplay();
         }
     }
@@ -144,18 +144,18 @@ public:
         result = std::max_element(
             children.begin(), children.end(),
             [](TreeNode *a, TreeNode *b) { return (a->get_visit_count() < b->get_visit_count()); });
-        return children.at(std::distance(children.begin(), result));
+        return children[std::distance(children.begin(), result)];
     }
 
     auto best_child_as_move() -> Move
     {
         std::vector<TreeNode *>::iterator result;
-        // if (board.legal_moves().size() == 0)
+        // if (board.num_legal_moves() == 0)
         //     std::cout << "error 2\n";
         result = std::max_element(
             children.begin(), children.end(),
             [](TreeNode *a, TreeNode *b) { return (a->get_visit_count() < b->get_visit_count()); });
-        return board.legal_moves().at(std::distance(children.begin(), result));
+        return board.legal_moves()[std::distance(children.begin(), result)];
     }
 
     void show_child_winrates()
@@ -292,7 +292,7 @@ public:
             rootNode->set_state(board);
             rootNode->set_player_no(opponent);
         }
-        expand_node(rootNode);
+        // if you start getting weird out_of_range() errors at low TC then expand the root node here
         while (std::chrono::steady_clock::now() < end)
         {
             TreeNode *promisingNode = select_promising_node(rootNode);
@@ -364,6 +364,7 @@ public:
         nodes++;
         TreeNode tempNode = TreeNode(*node);
         State tempState = tempNode.get_state();
+        tempState.mem_setup();
         short boardStatus = tempState.evaluate();
         if (boardStatus == opponent)
         {
@@ -642,9 +643,9 @@ inline void selfplay(int TL)
 {
     Zero engine1 = Zero(TL);
     Zero engine2 = Zero(TL);
-    int eturn;
-    std::cout << "1 for Zero first, -1 for Istus first.\n--> ";
-    std::cin >> eturn;
+    int eturn = 1;
+    // std::cout << "1 for Zero first, -1 for Istus first.\n--> ";
+    // std::cin >> eturn;
     while (!engine1.node.is_game_over() && !engine2.node.is_game_over())
     {
         engine1.node.show();

@@ -1,11 +1,7 @@
 #include <iostream>
 #include <vector>
-#include <bitset>
-
-auto popcount(short bb) -> short
-{
-    return std::bitset<16>(bb).count();
-}
+#include <array>
+#include "accelerations.hpp"
 
 namespace Board
 {
@@ -183,11 +179,13 @@ namespace UTTT
         Board::SubState metaposition[9];
         short forcingBoard;
         short turn;
-        std::vector<short> movestack;
-        std::vector<short> forcingstack;
+        std::vector<short> movestack;    // reserve for the playout boards
+        std::vector<short> forcingstack; // reserve for the playout boards
 
         State()
         {
+            movestack.reserve(16);
+            forcingstack.reserve(16);
             for (short i = 0; i < 9; i++)
             {
                 metaposition[i] = Board::SubState();
@@ -204,6 +202,12 @@ namespace UTTT
             }
             forcingBoard = inputState->forcingBoard;
             turn = inputState->turn;
+        }
+
+        void mem_setup()
+        {
+            movestack.reserve(81);
+            forcingstack.reserve(81);
         }
 
         void reset()
@@ -353,10 +357,8 @@ namespace UTTT
 
         auto is_game_over() -> bool
         {
-            if (legal_moves().size() == 0)
-            {
+            if (num_legal_moves() == 0)
                 return true;
-            }
             return (evaluate() != 0);
         }
 
@@ -380,7 +382,7 @@ namespace UTTT
             }
             std::cout << "\n";
             int board, square;
-            std::vector<int> ordering = {
+            std::array<int, 81> ordering = {
                 0, 1, 2, 9, 10, 11, 18, 19, 20, 3, 4, 5, 12, 13, 14, 21, 22, 23, 6, 7, 8, 15, 16, 17, 24, 25, 26, 27, 28, 29, 36, 37, 38, 45, 46, 47, 30, 31, 32, 39, 40, 41, 48, 49, 50, 33, 34, 35, 42, 43, 44, 51, 52, 53, 54, 55, 56, 63, 64, 65, 72, 73, 74, 57, 58, 59, 66, 67, 68, 75, 76, 77, 60, 61, 62, 69, 70, 71, 78, 79, 80};
             int counter = 0;
             std::string linebreak = " |-----------------------|\n";
@@ -405,7 +407,7 @@ namespace UTTT
         {
             if (forcingBoard != -1)
                 return 9 - popcount(metaposition[forcingBoard].union_bb());
-            
+
             short cnt = 0;
             for (short i = 0; i < 9; i++)
             {
@@ -418,6 +420,7 @@ namespace UTTT
         auto legal_moves() -> std::vector<Move>
         {
             std::vector<Move> moves;
+            moves.reserve(num_legal_moves());
             // only allow the forcingBoard
             if (metaposition[forcingBoard].is_board_dead())
             {
@@ -448,18 +451,21 @@ namespace UTTT
         }
     };
 
-    bool operator==(State a, State b){
+    bool operator==(State a, State b)
+    {
         if (a.forcingBoard != b.forcingBoard)
             return false;
         if (a.turn != b.turn)
             return false;
-        for (short i = 0; i < 9; i++){
+        for (short i = 0; i < 9; i++)
+        {
             if (a.metaposition[i].position[0] != b.metaposition[i].position[0])
                 return false;
             if (a.metaposition[i].position[1] != b.metaposition[i].position[1])
                 return false;
         }
-        if (a.forcingstack != b.forcingstack){
+        if (a.forcingstack != b.forcingstack)
+        {
             return false;
         }
         return a.movestack == b.movestack;

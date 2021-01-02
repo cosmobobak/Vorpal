@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include "accelerations.hpp"
 
 int weights[] = {1, 2, 3, 4, 3, 2, 1};
 
@@ -24,6 +25,16 @@ namespace Coin
         int players[2] = {-1, 1};
         std::vector<Move> movestack;
 
+        State()
+        {
+            movestack.reserve(16);
+        }
+
+        void mem_setup()
+        {
+            movestack.reserve(7 * 6);
+        }
+
         void reset()
         {
             for (int row = 0; row < 6; row++)
@@ -37,15 +48,10 @@ namespace Coin
 
         auto is_full() -> bool //WORKING
         {
-            for (int row = 0; row < 6; row++)
+            for (int col = 0; col < 7; col++)
             {
-                for (int col = 0; col < 7; col++)
-                {
-                    if (node[row][col] == 0)
-                    {
-                        return false;
-                    }
-                }
+                if (node[0][col] == 0)
+                    return false;
             }
             return true;
         }
@@ -65,9 +71,21 @@ namespace Coin
             std::cout << '\n';
         }
 
+        auto num_legal_moves() -> short
+        {
+            short count = 0;
+            for (short i = 0; i < 7; i++)
+            {
+                if (node[0][i] == 0)
+                    count++;
+            }
+            return count;
+        }
+
         auto legal_moves() -> std::vector<Move>
         {
             std::vector<Move> moves;
+            moves.reserve(7);
             int ordering[] = {3, 4, 2, 5, 1, 6, 0};
             for (int col = 0; col < 7; col++)
             {
@@ -109,13 +127,11 @@ namespace Coin
                     if (turn == 1)
                     {
                         node[row - 1][col] = players[0];
-                        turn = -1;
                         break;
                     }
                     else
                     {
                         node[row - 1][col] = players[1];
-                        turn = 1;
                         break;
                     }
                 }
@@ -124,15 +140,14 @@ namespace Coin
                     if (turn == 1)
                     {
                         node[row][col] = players[0];
-                        turn = -1;
                     }
                     else
                     {
                         node[row][col] = players[1];
-                        turn = 1;
                     }
                 }
             }
+            turn = -turn;
             movestack.push_back(col);
         }
 
@@ -148,14 +163,7 @@ namespace Coin
                     break;
                 }
             }
-            if (turn == 1)
-            {
-                turn = -1;
-            }
-            else
-            {
-                turn = 1;
-            }
+            turn = -turn;
         }
 
         auto horizontal_term() -> int
@@ -259,16 +267,16 @@ namespace Coin
             int v, h, u, d;
             v = vertical_term();
             if (v)
-                {return v;}
+                return v;
             h = horizontal_term();
             if (h)
-                {return h;}
+                return h;
             u = diagup_term();
             if (u)
-                {return u;}
+                return u;
             d = diagdown_term();
             if (d)
-                {return d;}
+                return d;
 
             return 0;
         }
@@ -308,11 +316,27 @@ namespace Coin
             int val = 0;
             for (short row = 0; row < 6; row++)
             {
-                for (short i = 0; i < 7; i++){
+                for (short i = 0; i < 7; i++)
+                {
                     val += node[row][i] * weights[i];
                 }
             }
             return -(val * 10); // use some sort of central weighting approach
         }
     };
+
+    bool operator==(State a, State b)
+    {
+        if (a.turn != b.turn)
+            return false;
+        for (int row = 0; row < 6; row++)
+        {
+            for (int col = 0; col < 7; col++)
+            {
+                if (a.node[row][col] != b.node[row][col])
+                    return false;
+            }
+        }
+        return a.movestack == b.movestack;
+    }
 } // namespace Coin

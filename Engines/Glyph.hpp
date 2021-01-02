@@ -1,16 +1,22 @@
 #include <iostream>
 #include <vector>
+#include "accelerations.hpp"
 
 namespace Glyph
 {
-    #define Move short
-    
+#define Move short
+
     class State
     {
     public:
         int position[2] = {0b000000000, 0b000000000};
         int turn = 1;
         std::vector<int> movestack;
+
+        void mem_setup()
+        {
+            movestack.reserve(9);
+        }
 
         void reset()
         {
@@ -131,11 +137,6 @@ namespace Glyph
             return 0;
         }
 
-        auto rel_evaluate(int turnmod) -> int
-        {
-            return evaluate() * turnmod;
-        }
-
         void pass_turn()
         {
             turn = -turn;
@@ -167,10 +168,16 @@ namespace Glyph
             return (evaluate() != 0) || is_full();
         }
 
-        auto legal_moves() -> std::vector<int>
+        auto num_legal_moves()
         {
-            std::vector<int> moves;
-            for (int i = 0; i < 9; i++)
+            return 9 - popcount(position[0] | position[1]);
+        }
+
+        auto legal_moves() -> std::vector<Move>
+        {
+            std::vector<Move> moves;
+            moves.reserve(9);
+            for (short i = 0; i < 9; i++)
             {
                 if (!pos_filled(i))
                     moves.push_back(i);
@@ -194,4 +201,15 @@ namespace Glyph
             return 0;
         }
     };
+
+    bool operator==(State a, State b)
+    {
+        if (a.turn != b.turn)
+            return false;
+        if (a.position[0] != b.position[0])
+            return false;
+        if (a.position[1] != b.position[1])
+            return false;
+        return a.movestack == b.movestack;
+    }
 } // namespace Glyph
