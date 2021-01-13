@@ -1,24 +1,26 @@
 #pragma GCC optimize("Ofast", "unroll-loops", "omit-frame-pointer", "inline")
 #pragma GCC target("avx")
 
-#include <iostream>
-#include <vector>
 #include <algorithm>
+#include <cassert>
+#include <chrono>
 #include <climits>
 #include <cmath>
-#include <chrono>
 #include <cstdlib>
+#include <ctime>
+#include <iostream>
+#include <vector>
+
 #include "Coin.hpp"
 #include "Glyph.hpp"
 #include "UTTT.hpp"
 
-constexpr auto EXP_FACTOR = 5;
+using namespace UTTT;
 
-using namespace Glyph;
+constexpr auto EXP_FACTOR = gameexpfactor;
 
-class TreeNode
-{
-public:
+class TreeNode {
+   public:
     int winScore = 0;
     int visits = 0;
     short playerNo;
@@ -26,58 +28,47 @@ public:
     TreeNode *parent = nullptr;
     std::vector<TreeNode *> children;
 
-    TreeNode(State board)
-    {
+    TreeNode(const State &board) {
         this->board = board;
     }
 
-    void set_player_no(short playerNo)
-    {
+    void set_player_no(const short playerNo) {
         this->playerNo = playerNo;
     }
 
-    auto get_player_no() -> short
-    {
+    auto get_player_no() -> short {
         return playerNo;
     }
 
-    auto get_opponent() -> short
-    {
+    auto get_opponent() -> short {
         return -playerNo;
     }
 
-    void set_parent(TreeNode *parent)
-    {
+    void set_parent(TreeNode *parent) {
         this->parent = parent;
     }
 
-    void set_state(State board)
-    {
+    void set_state(const State &board) {
         this->board = board;
     }
 
-    void show()
-    {
+    void show() {
         std::cout << "My state is:\n";
         board.show();
-        if (parent)
-        {
+        if (parent) {
             std::cout << "My parent's state is:\n";
             parent->show();
         }
         std::cout << "and I have " << children.size() << " children.\n";
     }
 
-    auto get_children() -> std::vector<TreeNode *>
-    {
+    auto get_children() -> std::vector<TreeNode *> {
         return children;
     }
 
-    void expand()
-    {
-        children.reserve(board.num_legal_moves()); // do this in the constructor, but only if you figure out how to make arrays work
-        for (auto &&move : board.legal_moves())
-        {
+    void expand() {
+        children.reserve(board.num_legal_moves());  // do this in the constructor, but only if you figure out how to make arrays work
+        for (const auto &move : board.legal_moves()) {
             board.play(move);
             children.push_back(new TreeNode(board));
             children.back()->set_parent(this);
@@ -86,188 +77,157 @@ public:
         }
     }
 
-    auto get_win_score() -> int
-    {
+    auto get_win_score() -> int {
         return winScore;
     }
 
-    auto get_visit_count() -> int
-    {
+    auto get_visit_count() -> int {
         return visits;
     }
 
-    auto get_parent_visits() -> int
-    {
+    auto get_parent_visits() -> int {
         return parent->get_visit_count();
     }
 
-    void increment_visits()
-    {
+    void increment_visits() {
         visits++;
     }
 
-    void add_score(int s)
-    {
+    void add_score(const int s) {
         winScore += s;
     }
 
-    void set_win_score(int s)
-    {
+    void set_win_score(const int s) {
         winScore = s;
     }
 
-    auto get_parent() -> TreeNode *
-    {
+    auto get_parent() -> TreeNode * {
         return parent;
     }
 
-    auto get_state() -> State
-    {
+    auto get_state() -> State {
         return board;
     }
 
-    auto random_child() -> TreeNode *
-    {
+    auto random_child() -> TreeNode * {
         return children[rand() % children.size()];
     }
 
-    auto get_winrate() -> double
-    {
+    auto get_winrate() -> double {
         return (double)winScore / (double)visits;
     }
 
-    auto best_child() -> TreeNode *
-    {
+    auto best_child() -> TreeNode * {
         std::vector<TreeNode *>::iterator result;
-        // if(children.size() == 0) 
-        //     std::cout << "error 1\n";
         result = std::max_element(
             children.begin(), children.end(),
             [](TreeNode *a, TreeNode *b) { return (a->get_visit_count() < b->get_visit_count()); });
         return children[std::distance(children.begin(), result)];
     }
 
-    auto best_child_as_move() -> Move
-    {
+    auto best_child_as_move() -> Move {
         std::vector<TreeNode *>::iterator result;
-        // if (board.num_legal_moves() == 0)
-        //     std::cout << "error 2\n";
         result = std::max_element(
             children.begin(), children.end(),
             [](TreeNode *a, TreeNode *b) { return (a->get_visit_count() < b->get_visit_count()); });
+        // if (board.legal_moves().size() != children.size()) {
+        //     std::cout << board.legal_moves().size() << " " << children.size() << '\n';
+        //     board.show_debug();
+        //     std::terminate();
+        // }
         return board.legal_moves()[std::distance(children.begin(), result)];
     }
 
-    void show_child_winrates()
-    {
-        for (auto &&child : children)
-        {
+    void show_child_winrates() {
+        for (const auto &child : children) {
             std::cout << child->get_win_score() << " ";
         }
         std::cout << "\n";
     }
 
-    void show_child_visitrates()
-    {
-        for (auto &&child : children)
-        {
+    void show_child_visitrates() {
+        for (const auto &child : children) {
             std::cout << child->get_visit_count() << " ";
         }
         std::cout << "\n";
     }
 };
 
-namespace UCT
-{
-    auto uct_value(int totalVisit, double nodeWinScore, int nodeVisit) -> double
-    {
-        if (nodeVisit == 0)
-        {
-            return INT_MAX;
-        }
-        return ((double)nodeWinScore / (double)nodeVisit) + 1.41 * sqrt(log(totalVisit) / (double)nodeVisit) * EXP_FACTOR;
+namespace UCT {
+auto uct_value(const int totalVisit, const double nodeWinScore, const int nodeVisit) -> double {
+    if (nodeVisit == 0) {
+        return INT_MAX;
     }
+    return ((double)nodeWinScore / (double)nodeVisit) + 1.41 * sqrt(log(totalVisit) / (double)nodeVisit) * EXP_FACTOR;
+}
 
-    auto uct_compare(TreeNode *a, TreeNode *b) -> bool
-    {
-        return (
-            uct_value(
-                a->get_parent_visits(),
-                a->get_win_score(),
-                a->get_visit_count()) <
-            uct_value(
-                b->get_parent_visits(),
-                b->get_win_score(),
-                b->get_visit_count()));
-    }
+auto uct_compare(TreeNode *const a, TreeNode *const b) -> bool {
+    return (
+        uct_value(
+            a->get_parent_visits(),
+            a->get_win_score(),
+            a->get_visit_count()) <
+        uct_value(
+            b->get_parent_visits(),
+            b->get_win_score(),
+            b->get_visit_count()));
+}
 
-    auto best_node_uct(TreeNode *node) -> TreeNode *
-    {
-        auto children = node->get_children();
-        std::vector<TreeNode *>::iterator result;
-        result = std::max_element(
-            children.begin(), children.end(),
-            uct_compare);
-        return children[std::distance(children.begin(), result)];
-    }
-}; // namespace UCT
+auto best_node_uct(TreeNode *const node) -> TreeNode * {
+    auto children = node->get_children();
+    std::vector<TreeNode *>::iterator result;
+    result = std::max_element(
+        children.begin(), children.end(),
+        uct_compare);
+    return children[std::distance(children.begin(), result)];
+}
+};  // namespace UCT
 
-class MCTS
-{
-public:
+class MCTS {
+   public:
     const short WIN_SCORE = 10;
-    short timeLimit;     // limiter on search time
-    short opponent;      // the win score that the opponent wants
-    short reward;        // the win score that the agent wants
-    bool memsafe = true; // dictates whether we preserve a part of the tree across moves
+    long long timeLimit;        // limiter on search time
+    const bool memsafe = true;  // dictates whether we preserve a part of the tree across moves
+    short opponent;             // the win score that the opponent wants
+    short reward;               // the win score that the agent wants
     int nodes = 0;
     TreeNode *preservedNode = nullptr;
 
-    MCTS()
-    {
+    MCTS() {
         MCTS(1);
     }
-    MCTS(short player)
-    {
+    MCTS(const short player) {
         MCTS(player, 3);
     }
-    MCTS(short player, short strength)
-    {
+    MCTS(const short player, const long long strength) {
         srand(time(NULL));
         timeLimit = strength;
         opponent = -player;
         reward = player;
     }
 
-    void deleteTree(TreeNode *root)
-    {
+    void deleteTree(TreeNode *root) {
         /* first delete the subtrees */
-        for (TreeNode *child : root->children)
-        {
+        for (TreeNode *child : root->children) {
             deleteTree(child);
         }
         /* then delete the node */
         delete root;
     }
 
-    void set_opponent(short i)
-    {
+    void set_opponent(const short i) {
         opponent = i;
         reward = -i;
     }
 
-    auto prune(TreeNode *parent, State target) -> TreeNode *
-    {
+    auto prune(TreeNode *parent, const State &target) -> TreeNode * {
         TreeNode *out = nullptr;
         bool found = false;
-        for (TreeNode *child : parent->get_children())
-        {
-            if (!found && child->get_state() == target)
-            {
+        for (TreeNode *child : parent->get_children()) {
+            if (!found && child->get_state() == target) {
                 out = child;
                 found = true;
-            }
-            else
+            } else
                 deleteTree(child);
         }
         if (out)
@@ -276,25 +236,22 @@ public:
         return out;
     }
 
-    auto find_best_next_board(State board) -> State
-    {
+    auto find_best_next_board(const State board) -> State {
         nodes = 0;
         set_opponent(-board.turn);
-        // define an end time which will act as a terminating condition
-        auto end = std::chrono::steady_clock::now();
-        end += std::chrono::milliseconds(timeLimit);
+        // an end time which will act as a terminating condition
+        auto end = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeLimit);
         TreeNode *rootNode = nullptr;
         if (preservedNode)
             rootNode = prune(preservedNode, board);
-        if (!rootNode)
-        {
+        if (!rootNode) {
             rootNode = new TreeNode(board);
             rootNode->set_state(board);
             rootNode->set_player_no(opponent);
         }
         // if you start getting weird out_of_range() errors at low TC then expand the root node here
-        while (std::chrono::steady_clock::now() < end)
-        {
+        // auto breakunit = std::chrono::steady_clock::now();
+        while (std::chrono::steady_clock::now() < end) {
             TreeNode *promisingNode = select_promising_node(rootNode);
 
             if (!promisingNode->get_state().is_game_over())
@@ -302,11 +259,17 @@ public:
 
             TreeNode *nodeToExplore = promisingNode;
 
-            if (promisingNode->get_children().size() > 0)
+            if (promisingNode->get_children().size() != 0)
                 nodeToExplore = promisingNode->random_child();
 
             short playoutResult = simulate_playout(nodeToExplore);
             backpropagate(nodeToExplore, playoutResult);
+
+            /*if (std::chrono::steady_clock::now() > breakunit){
+            //     std::cout << "The best move so far is: " << rootNode->best_child_as_move() + 1 << '\n';
+                breakunit += std::chrono::milliseconds(500);
+                rootNode->show_child_visitrates();
+            }*/
         }
         State out = rootNode->best_child()->get_state();
         std::cerr << "ZERO:\n";
@@ -314,65 +277,54 @@ public:
         std::cerr << "Zero win prediction: " << (int)(rootNode->best_child()->get_winrate() * (100 / WIN_SCORE)) << "%\n";
         short action, sboard, square, row, col;
         action = rootNode->best_child_as_move();
+        // assert(action >= 0 && action <= 80);
+        std::cout << action << '\n';
         square = action % 9;
         sboard = action / 9;
         col = (sboard % 3) * 3 + square % 3;
         row = (sboard / 3) * 3 + square / 3;
         std::cout << row << " " << col << std::endl;
-        if (!memsafe)
-        {
+        // rootNode->show_child_visitrates();
+        if (!memsafe) {
             deleteTree(rootNode);
-        }
-        else
-        {
+        } else {
             preservedNode = prune(rootNode, out);
         }
         return out;
     }
 
-    auto select_promising_node(TreeNode *rootNode) -> TreeNode *
-    {
+    inline auto select_promising_node(TreeNode *const rootNode) -> TreeNode * {
         TreeNode *node = rootNode;
         while (node->get_children().size() != 0)
-        {
             node = UCT::best_node_uct(node);
-        }
         return node;
     }
 
-    void expand_node(TreeNode *node)
-    {
+    inline void expand_node(TreeNode *node) {
         node->expand();
     }
 
-    void backpropagate(TreeNode *nodeToExplore, short winner)
-    {
+    inline void backpropagate(TreeNode *nodeToExplore, const short winner) {
         TreeNode *tempNode = nodeToExplore;
-        while (tempNode)
-        {
+        while (tempNode) {
             tempNode->increment_visits();
-            if (tempNode->get_player_no() == winner)
-            {
+            if (tempNode->get_player_no() == winner) {
                 tempNode->add_score(WIN_SCORE);
             }
             tempNode = tempNode->get_parent();
         }
     }
 
-    auto simulate_playout(TreeNode *node) -> short
-    {
+    inline auto simulate_playout(TreeNode *node) -> short {
         nodes++;
-        TreeNode tempNode = TreeNode(*node);
-        State tempState = tempNode.get_state();
+        State tempState = node->get_state();
         tempState.mem_setup();
         short boardStatus = tempState.evaluate();
-        if (boardStatus == opponent)
-        {
+        if (boardStatus == opponent) {
             node->get_parent()->set_win_score(INT_MIN);
             return boardStatus;
         }
-        while (!tempState.is_game_over())
-        {
+        while (!tempState.is_game_over()) {
             tempState.random_play();
         }
         boardStatus = tempState.evaluate();
@@ -380,33 +332,30 @@ public:
     }
 };
 
-class Zero
-{
-public:
+class Zero {
+   public:
     MCTS searchDriver = MCTS();
     State node = State();
 
-    Zero()
-    {
+    Zero() {
         Zero(99);
     }
-    Zero(short strength)
-    {
+    Zero(const long long strength) {
         searchDriver.timeLimit = strength;
     }
 
-    void print(std::string input, std::string end = "\n")
-    {
+    inline void print(const std::string input, const std::string end = "\n") {
         std::cout << input << end;
     }
 
-    auto get_player_move() -> int
-    {
-        std::vector<Move> legals = node.legal_moves();
+    auto get_player_move() -> int {
+        const std::vector<Move> legals = node.legal_moves();
+        std::vector<Move> shiftedLegals;
+        std::transform(legals.begin(), legals.end(), std::back_inserter(shiftedLegals), [](Move n) { return n + 1; });
+        std::cout << "Your legal moves are: " << string(shiftedLegals) << "\n--> ";
         int pos;
         std::cin >> pos;
-        while (std::none_of(legals.begin(), legals.end(), [pos](Move m) { return m == (pos - 1); }))
-        {
+        while (std::none_of(legals.begin(), legals.end(), [pos](Move m) { return m == (pos - 1); })) {
             print("invalid move.");
             node.show();
             std::cin >> pos;
@@ -414,27 +363,24 @@ public:
         return pos - 1;
     }
 
-    void engine_move()
-    {
+    void engine_move() {
         node = searchDriver.find_best_next_board(node);
     }
 
-    void show_result()
-    {
-        switch (node.evaluate())
-        {
-        case 0:
-            std::cout << "1/2-1/2" << '\n';
-            break;
-        case 1:
-            std::cout << "1-0" << '\n';
-            break;
-        case -1:
-            std::cout << "0-1" << '\n';
-            break;
-        default:
-            std::cerr << "evaluate returned non-zero";
-            break;
+    void show_result() const {
+        switch (node.evaluate()) {
+            case 0:
+                std::cout << "1/2-1/2" << '\n';
+                break;
+            case 1:
+                std::cout << "1-0" << '\n';
+                break;
+            case -1:
+                std::cout << "0-1" << '\n';
+                break;
+            default:
+                std::cerr << "evaluate returned non-zero";
+                break;
         }
     }
 };
@@ -443,9 +389,8 @@ public:
 // The RAVE approach makes this heuristic value = some sort of aggregate score of the move on parent nodes.
 // UCT becomes (simulation value / rollouts) + (heuristic value / rollouts) + (exploration factor)
 
-class Istus
-{
-public:
+class Istus {
+   public:
     State node;
     int nodes;
     int timeLimit;
@@ -453,40 +398,35 @@ public:
     short bestcase;
     short score;
 
-    Istus()
-    {
+    Istus() {
         Istus(99);
     }
-    Istus(int TL)
-    {
+    Istus(const int TL) {
         timeLimit = TL;
     }
 
-    auto negamax(int depth = 10, int colour = 1, int a = -2, int b = 2) -> int //WORKING
+    auto negamax(int depth = 10, int colour = 1, int a = -2, int b = 2) -> int  //WORKING
     {
-        if (depth < 1)
-        {
+        if (depth < 1) {
             nodes++;
             return colour * node.evaluate();
         }
 
-        if (node.is_game_over())
-        {
+        if (node.is_game_over()) {
             nodes++;
             return colour * node.evaluate() * depth;
         }
         int score;
 
-        node.pass_turn();                             // MAKE A NULL MOVE
-        score = -negamax(depth - 3, -colour, -b, -a); // PERFORM A LIMITED SEARCH
-        node.pass_turn();                             // UNMAKE NULL MOVE
+        node.pass_turn();                              // MAKE A NULL MOVE
+        score = -negamax(depth - 3, -colour, -b, -a);  // PERFORM A LIMITED SEARCH
+        node.pass_turn();                              // UNMAKE NULL MOVE
         if (score > a)
             a = score;
         if (a >= b)
             return a;
 
-        for (auto &&move : node.legal_moves())
-        {
+        for (const auto &move : node.legal_moves()) {
             node.play(move);
             nodes += 1;
             score = -negamax(depth - 1, -colour, -b, -a);
@@ -501,7 +441,7 @@ public:
         return a;
     }
 
-    void engine_move() //WORKING
+    void engine_move()  //WORKING
     {
         nodes = 0;
         bestcase = -2;
@@ -510,16 +450,13 @@ public:
 
         auto end = std::chrono::steady_clock::now();
         end += std::chrono::milliseconds(timeLimit);
-        while (std::chrono::steady_clock::now() < end && d < 22)
-        {
+        while (std::chrono::steady_clock::now() < end && d < 22) {
             bestcase = -2;
-            for (auto &&move : node.legal_moves())
-            {
+            for (const auto &move : node.legal_moves()) {
                 node.play(move);
                 score = -negamax(d, node.turn);
                 node.unplay();
-                if (bestcase < score)
-                {
+                if (bestcase < score) {
                     bestcase = score;
                     bestmove = move;
                 }
@@ -532,13 +469,11 @@ public:
         node.play(bestmove);
     }
 
-    void reset_nodes()
-    {
+    void reset_nodes() {
         nodes = 0;
     }
 
-    void show_result()
-    {
+    void show_result() {
         int r;
         r = node.evaluate();
         if (r == 0)
@@ -549,18 +484,18 @@ public:
             std::cout << "0-1" << '\n';
     }
 
-    void print(std::string input, std::string end = "\n")
-    {
+    void print(const std::string input, const std::string end = "\n") {
         std::cout << input << end;
     }
 
-    auto get_player_move() -> int
-    {
+    auto get_player_move() -> int {
         std::vector<Move> legals = node.legal_moves();
         int pos;
         std::cin >> pos;
-        while (std::none_of(legals.begin(), legals.end(), [pos](Move m) { return m == (pos - 1); }))
-        {
+        while (std::none_of(
+            legals.begin(),
+            legals.end(),
+            [pos](Move m) { return m == (pos - 1); })) {
             print("invalid move.");
             node.show();
             std::cin >> pos;
@@ -569,8 +504,7 @@ public:
     }
 };
 
-auto get_first_player() -> bool
-{
+auto get_first_player() -> bool {
     bool player;
     std::cout << "Is the human player going first? [1/0]"
               << "\n";
@@ -578,19 +512,16 @@ auto get_first_player() -> bool
     return player;
 }
 
-inline void run_negamax_game(int TL)
-{
+inline void run_negamax_game(const long long TL) {
     Istus glyph = Istus(TL);
     Move i;
     glyph.node.show();
-    if (get_first_player())
-    {
+    if (get_first_player()) {
         i = glyph.get_player_move();
         glyph.node.play(i);
         glyph.node.show();
     }
-    while (!glyph.node.is_game_over())
-    {
+    while (!glyph.node.is_game_over()) {
         glyph.engine_move();
         glyph.reset_nodes();
         glyph.node.show();
@@ -603,35 +534,29 @@ inline void run_negamax_game(int TL)
     glyph.show_result();
 }
 
-inline void run_mcts_game(int TL)
-{
+inline void run_mcts_game(const long long TL) {
     Zero glyph = Zero(TL);
     Move i;
     glyph.node.show();
-    if (get_first_player())
-    {
+    if (get_first_player()) {
         i = glyph.get_player_move();
         glyph.node.play(i);
         glyph.node.show();
     }
-    while (!glyph.node.is_game_over())
-    {
+    while (!glyph.node.is_game_over()) {
         glyph.engine_move();
         glyph.searchDriver.nodes = 0;
         glyph.node.show();
         if (glyph.node.is_game_over())
             break;
         i = glyph.get_player_move();
-        if (i == -1)
-        {
+        if (i == -1) {
             glyph.node.unplay();
             glyph.node.unplay();
             i = glyph.get_player_move();
             glyph.node.play(i);
             glyph.node.show();
-        }
-        else
-        {
+        } else {
             glyph.node.play(i);
             glyph.node.show();
         }
@@ -639,24 +564,26 @@ inline void run_mcts_game(int TL)
     glyph.show_result();
 }
 
-inline void selfplay(int TL)
-{
+inline void selfplay(const long long TL) {
     Zero engine1 = Zero(TL);
     Zero engine2 = Zero(TL);
     int eturn = 1;
     // std::cout << "1 for Zero first, -1 for Istus first.\n--> ";
     // std::cin >> eturn;
-    while (!engine1.node.is_game_over() && !engine2.node.is_game_over())
-    {
+    while (!engine1.node.is_game_over() && !engine2.node.is_game_over()) {
         engine1.node.show();
-        std::cout << engine1.node.num_legal_moves() << " " << engine1.node.legal_moves().size() << '\n';
-        if (eturn == -1)
-        {
+        std::cout << string(engine1.node.legal_moves()) << '\n';
+        std::cout << string(engine2.node.legal_moves()) << '\n';
+        std::cout << "efficient counter: "
+                  << engine1.node.num_legal_moves()
+                  << " actual counter: "
+                  << engine1.node.legal_moves().size()
+                  << '\n';
+        // assert(engine1.node.num_legal_moves() == engine1.node.legal_moves().size());
+        if (eturn == -1) {
             engine1.engine_move();
             engine2.node = engine1.node;
-        }
-        else
-        {
+        } else {
             engine2.engine_move();
             engine1.node = engine2.node;
         }
@@ -666,35 +593,66 @@ inline void selfplay(int TL)
     engine1.show_result();
 }
 
-int main()
-{
-    // Zero engine4 = Zero(60000);
-    // engine4.node.show();
-    // std::cout << "Search starting!\n";
-    // engine4.engine_move();
+inline void userplay() {
+    Zero game = Zero();
+    game.node.show();
+    while (!game.node.is_game_over() && !game.node.is_game_over()) {
+        int i;
+        i = game.get_player_move();
+        game.node.play(i);
+        game.node.show();
+    }
+    game.node.show();
+    game.show_result();
+}
 
-    std::cout << "Play against Zero [0] | Play against Istus [1] | Watch a self-play game [2]\n--> ";
+inline void testsuite() {
+    Zero game = Zero();
+    while (!game.node.is_game_over()){
+        std::cout << "\nposition legal moves: " 
+                  << game.node.legal_moves().size()
+                  << "\nfast move counter: "
+                  << game.node.num_legal_moves()
+                  << "\nactual list of moves: "
+                  << string(game.node.legal_moves())
+                  << "\nstate of play (is game over?): "
+                  << game.node.is_game_over()
+                  << '\n';
+        assert(game.node.legal_moves().size() == game.node.num_legal_moves());
+        game.node.random_play();
+    }
+}
+
+int main() {
+    std::cout << "Play against Zero [0] | Play against Istus [1] | Watch a self-play game [2] | Play with a friend [3] | Run tests [4]\n--> ";
     int ans;
     std::cin >> ans;
     std::cout << "milliseconds per move? ";
-    int TL;
+    long long TL;
     std::cin >> TL;
-    switch (ans)
-    {
-    case 0:
-        run_mcts_game(TL);
-        break;
+    switch (ans) {
+        case 0:
+            run_mcts_game(TL);
+            break;
 
-    case 1:
-        run_negamax_game(TL);
-        break;
+        case 1:
+            run_negamax_game(TL);
+            break;
 
-    case 2:
-        selfplay(TL);
-        break;
+        case 2:
+            selfplay(TL);
+            break;
 
-    default:
-        break;
+        case 3:
+            userplay();
+            break;
+
+        case 4:
+            testsuite();
+            break;
+
+        default:
+            break;
     }
 
     return 0;
