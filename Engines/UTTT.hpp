@@ -1,8 +1,8 @@
+#include <algorithm>
 #include <array>
 #include <iostream>
-#include <vector>
-#include <algorithm>
 #include <numeric>
+#include <vector>
 
 #include "accelerations.hpp"
 
@@ -175,8 +175,7 @@ class State {
         std::cout << "played moves: " << string(movestack) << '\n';
         std::cout << "previous forced boards: " << string(forcingstack) << '\n';
         int counter = 0;
-        for (const auto &substate : metaposition)
-        {
+        for (const auto &substate : metaposition) {
             std::cout << "substate " << counter << ":\n";
             substate.show();
         }
@@ -189,10 +188,9 @@ class State {
 
     void reset() {
         std::for_each(
-            metaposition.begin(), 
-            metaposition.end(), 
-            [](Board::SubState &b) { b.reset(); }
-        );
+            metaposition.begin(),
+            metaposition.end(),
+            [](Board::SubState &b) { b.reset(); });
     }
 
     inline void play(const short i) {
@@ -340,7 +338,7 @@ class State {
         std::cout << linebreak << "\n\n";
     }
 
-    auto num_legal_moves() -> short {
+    auto num_legal_moves() const -> short {
         if (forcingBoard != -1)
             return 9 - popcount(metaposition[forcingBoard].union_bb());
         short cnt = 0;
@@ -351,31 +349,15 @@ class State {
         return cnt;
     }
 
-    // inline auto num_legal_moves() -> short {
-    //     if (forcingBoard != -1)  // if we are being forced somewhere
-    //         if (!metaposition[forcingBoard].is_board_dead())
-    //             return 9 - popcount(metaposition[forcingBoard].union_bb());
-       
-    //     return std::accumulate(
-    //         metaposition.begin(), 
-    //         metaposition.end(), 
-    //         0, 
-    //         [](const int a, const Board::SubState &b) { 
-    //             return a + (b.is_board_dead() ? 0 : 9 - popcount(b.union_bb())); 
-    //         }
-    //     );
-    // }
-
     inline auto legal_moves() -> std::vector<Move> {
         std::vector<Move> moves;
         if (metaposition[forcingBoard].is_board_dead())
             forcingBoard = -1;
-        if (forcingBoard == -1){
+        if (forcingBoard == -1) {
             moves.reserve(81);
             auto bcounter = 0;
-            for (const auto &board : metaposition)
-            {
-                if (!board.is_board_dead()){
+            for (const auto &board : metaposition) {
+                if (!board.is_board_dead()) {
                     auto bb = ~board.union_bb() & 0b111111111;
                     for (; bb;) {
                         moves.push_back(bcounter * 9 + (lsb(bb)));

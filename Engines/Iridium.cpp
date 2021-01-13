@@ -272,18 +272,18 @@ class MCTS {
             }*/
         }
         State out = rootNode->best_child()->get_state();
-        std::cerr << "ZERO:\n";
+        // std::cerr << "ZERO:\n";
         std::cerr << nodes << " nodes processed.\n";
-        std::cerr << "Zero win prediction: " << (int)(rootNode->best_child()->get_winrate() * (100 / WIN_SCORE)) << "%\n";
+        // std::cerr << "Zero win prediction: " << (int)(rootNode->best_child()->get_winrate() * (100 / WIN_SCORE)) << "%\n";
         short action, sboard, square, row, col;
         action = rootNode->best_child_as_move();
         // assert(action >= 0 && action <= 80);
-        std::cout << action << '\n';
+        // std::cout << action << '\n';
         square = action % 9;
         sboard = action / 9;
         col = (sboard % 3) * 3 + square % 3;
         row = (sboard / 3) * 3 + square / 3;
-        std::cout << row << " " << col << std::endl;
+        // std::cout << row << " " << col << std::endl;
         // rootNode->show_child_visitrates();
         if (!memsafe) {
             deleteTree(rootNode);
@@ -608,8 +608,8 @@ inline void userplay() {
 
 inline void testsuite() {
     Zero game = Zero();
-    while (!game.node.is_game_over()){
-        std::cout << "\nposition legal moves: " 
+    while (!game.node.is_game_over()) {
+        std::cout << "\nposition legal moves: "
                   << game.node.legal_moves().size()
                   << "\nfast move counter: "
                   << game.node.num_legal_moves()
@@ -623,37 +623,48 @@ inline void testsuite() {
     }
 }
 
+inline void benchmark() {
+    constexpr long long tcs[4] = {15000, 5000, 1000, 99};
+    for (int i = 0; i < 4; i++) {
+        Zero engine1 = Zero(tcs[i]);
+        engine1.engine_move();
+        Zero engine2 = Zero(tcs[i]);
+        engine2.engine_move();
+        Zero engine3 = Zero(tcs[i]);
+        engine3.engine_move();
+    }
+}
+
 int main() {
-    std::cout << "Play against Zero [0] | Play against Istus [1] | Watch a self-play game [2] | Play with a friend [3] | Run tests [4]\n--> ";
+    std::cout << "Play against Zero [0] | Play against Istus [1] | Watch a self-play game [2] | Play with a friend [3] | Run tests [4] | Benchmark [5]\n--> ";
     int ans;
     std::cin >> ans;
-    std::cout << "milliseconds per move? ";
     long long TL;
-    std::cin >> TL;
+    if (ans < 3) {
+        std::cout << "milliseconds per move? ";
+        std::cin >> TL;
+    }
     switch (ans) {
         case 0:
             run_mcts_game(TL);
             break;
-
         case 1:
             run_negamax_game(TL);
             break;
-
         case 2:
             selfplay(TL);
             break;
-
         case 3:
             userplay();
             break;
-
         case 4:
             testsuite();
             break;
-
+        case 5:
+            benchmark();
+            break;
         default:
             break;
     }
-
     return 0;
 }
