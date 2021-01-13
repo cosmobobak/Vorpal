@@ -7,10 +7,12 @@
 #include "accelerations.hpp"
 
 namespace Board {
-using Move = short;
+using Move = int_fast16_t;
+using Bitboard = int_fast16_t;
+using Num = int_fast8_t;
 class SubState {
    public:
-    std::array<short, 2> position = {0b000000000, 0b000000000};
+    std::array<Bitboard, 2> position = {0b000000000, 0b000000000};
     // bool cached_death_state = false;
 
     void reset() {
@@ -18,11 +20,11 @@ class SubState {
         position[1] = 0b000000000;
     }
 
-    inline auto union_bb() const -> short {
+    inline auto union_bb() const -> Bitboard {
         return position[0] | position[1];
     }
 
-    inline void play(const short i, const short turn) {
+    inline void play(const Num i, const Num turn) {
         // n ^ (1 << k) is a binary XOR where you flip the kth bit of n
         if (turn == 1) {
             position[0] |= (1 << i);
@@ -31,7 +33,7 @@ class SubState {
         }
     }
 
-    inline void unplay(const short prevmove, const short turn)  // do not unplay on root
+    inline void unplay(const Num prevmove, const Num turn)  // do not unplay on root
     {
         if (turn == 1) {
             position[1] &= ~(1 << prevmove);
@@ -40,11 +42,11 @@ class SubState {
         }
     }
 
-    inline auto pos_filled(const short i) const -> bool {
+    inline auto pos_filled(const Num i) const -> bool {
         return position[0] & (1 << i) || position[1] & (1 << i);
     }
 
-    inline auto player_at(const short i) const -> bool  //only valid to use if pos_filled() returns true, true = x, false = y
+    inline auto player_at(const Num i) const -> bool  //only valid to use if pos_filled() returns true, true = x, false = y
     {
         return (position[0] & (1 << i));
     }
@@ -53,7 +55,7 @@ class SubState {
         return position[0] + position[1] == 0b111111111;
     }
 
-    inline auto evaluate() const -> short {
+    inline auto evaluate() const -> Num {
         // check first diagonal
         if (pos_filled(0) && pos_filled(4) && pos_filled(8)) {
             if (player_at(0) == player_at(4) && player_at(4) == player_at(8)) {
@@ -73,7 +75,7 @@ class SubState {
             }
         }
         // check rows
-        for (short i = 0; i < 3; i++) {
+        for (Num i = 0; i < 3; i++) {
             if (pos_filled(i * 3) && pos_filled(i * 3 + 1) && pos_filled(i * 3 + 2)) {
                 if (player_at(i * 3) == player_at(i * 3 + 1) && player_at(i * 3 + 1) == player_at(i * 3 + 2)) {
                     if (player_at(i * 3))
@@ -84,7 +86,7 @@ class SubState {
             }
         }
         // check columns
-        for (short i = 0; i < 3; i++) {
+        for (Num i = 0; i < 3; i++) {
             if (pos_filled(i) && pos_filled(i + 3) && pos_filled(i + 6)) {
                 if (player_at(i) == player_at(i + 3) && player_at(i + 3) == player_at(i + 6)) {
                     if (player_at(i))
@@ -98,8 +100,8 @@ class SubState {
     }
 
     void show() const {
-        for (int x = 0; x < 3; x++) {
-            for (int y = 0; y < 3; y++) {
+        for (Num x = 0; x < 3; x++) {
+            for (Num y = 0; y < 3; y++) {
                 if (pos_filled(x * 3 + y)) {
                     if (player_at(x * 3 + y))
                         std::cout << "X ";
@@ -126,7 +128,7 @@ class SubState {
         return false;
     }
 
-    auto get_square_as_char(const int square) const -> char {
+    auto get_square_as_char(const Num square) const -> char {
         if (!pos_filled(square)) {
             return '.';
         } else {
@@ -141,15 +143,17 @@ class SubState {
 }  // namespace Board
 
 namespace UTTT {
-using Move = short;
+using Move = int_fast16_t;
+using Bitboard = int_fast16_t;
+using Num = int_fast8_t;
 constexpr auto gameexpfactor = 5;
 class State {
    public:
     std::array<Board::SubState, 9> metaposition;
-    short forcingBoard;
-    short turn;
-    std::vector<short> movestack;     // reserve for the playout boards
-    std::vector<short> forcingstack;  // reserve for the playout boards
+    Num forcingBoard;
+    Num turn;
+    std::vector<Num> movestack;     // reserve for the playout boards
+    std::vector<Num> forcingstack;  // reserve for the playout boards
 
     State() {
         movestack.reserve(16);
@@ -174,7 +178,7 @@ class State {
         std::cout << "next forced board: " << forcingBoard << '\n';
         std::cout << "played moves: " << string(movestack) << '\n';
         std::cout << "previous forced boards: " << string(forcingstack) << '\n';
-        int counter = 0;
+        Num counter = 0;
         for (const auto &substate : metaposition) {
             std::cout << "substate " << counter << ":\n";
             substate.show();
@@ -193,9 +197,9 @@ class State {
             [](Board::SubState &b) { b.reset(); });
     }
 
-    inline void play(const short i) {
-        const short board = i / 9;
-        const short square = i % 9;
+    inline void play(const Num i) {
+        const Num board = i / 9;
+        const Num square = i % 9;
         metaposition[board].play(square, turn);
         movestack.push_back(i);
         turn = -turn;
@@ -205,9 +209,9 @@ class State {
 
     inline void unplay()  // do not unplay on root
     {
-        const short prevmove = movestack.back();
-        const short board = prevmove / 9;
-        const short square = prevmove % 9;
+        const Num prevmove = movestack.back();
+        const Num board = prevmove / 9;
+        const Num square = prevmove % 9;
         movestack.pop_back();
         metaposition[board].unplay(square, turn);
         turn = -turn;
@@ -215,15 +219,15 @@ class State {
         forcingBoard = forcingstack.back();
     }
 
-    inline auto board_won(const short board) const -> bool {
+    inline auto board_won(const Num board) const -> bool {
         return metaposition[board].evaluate() != 0;
     }
 
-    inline auto board_over(const short board) const -> bool {
+    inline auto board_over(const Num board) const -> bool {
         return metaposition[board].is_board_dead();
     }
 
-    inline auto winner_of_board(const short board) const -> bool  //only valid to use if pos_filled() returns true, true = x, false = y
+    inline auto winner_of_board(const Num board) const -> bool  //only valid to use if pos_filled() returns true, true = x, false = y
     {
         return metaposition[board].evaluate() == 1;
     }
@@ -232,7 +236,7 @@ class State {
         return std::all_of(metaposition.begin(), metaposition.end(), [](Board::SubState p) { return p.is_board_dead(); });
     }
 
-    inline auto evaluate() const -> short {
+    inline auto evaluate() const -> Num {
         // check first diagonal
         if (board_over(0) && board_over(4) && board_over(8)) {
             if (winner_of_board(0) == winner_of_board(4) && winner_of_board(4) == winner_of_board(8)) {
@@ -252,7 +256,7 @@ class State {
             }
         }
         // check rows
-        for (short i = 0; i < 3; i++) {
+        for (Num i = 0; i < 3; i++) {
             if (board_over(i * 3) && board_over(i * 3 + 1) && board_over(i * 3 + 2)) {
                 if (winner_of_board(i * 3) == winner_of_board(i * 3 + 1) && winner_of_board(i * 3 + 1) == winner_of_board(i * 3 + 2)) {
                     if (winner_of_board(i * 3))
@@ -263,7 +267,7 @@ class State {
             }
         }
         // check columns
-        for (short i = 0; i < 3; i++) {
+        for (Num i = 0; i < 3; i++) {
             if (board_over(i) && board_over(i + 3) && board_over(i + 6)) {
                 if (winner_of_board(i) == winner_of_board(i + 3) && winner_of_board(i + 3) == winner_of_board(i + 6)) {
                     if (winner_of_board(i))
@@ -273,9 +277,9 @@ class State {
                 }
             }
         }
-        short xwon = 0;
-        short owon = 0;
-        for (short i = 0; i < 9; i++) {
+        Num xwon = 0;
+        Num owon = 0;
+        for (Num i = 0; i < 9; i++) {
             if (board_over(i)) {
                 if (winner_of_board(i)) {
                     xwon++;
@@ -304,8 +308,8 @@ class State {
     }
 
     void show() const {
-        for (int x = 0; x < 3; x++) {
-            for (int y = 0; y < 3; y++) {
+        for (Num x = 0; x < 3; x++) {
+            for (Num y = 0; y < 3; y++) {
                 if (board_over(x * 3 + y)) {
                     if (winner_of_board(x * 3 + y))
                         std::cout << "X ";
@@ -317,12 +321,12 @@ class State {
             std::cout << "\n";
         }
         std::cout << "\n";
-        int board, square;
-        const std::array<int, 81> ordering = {
+        Num board, square;
+        const std::array<Num, 81> ordering = {
             0, 1, 2, 9, 10, 11, 18, 19, 20, 3, 4, 5, 12, 13, 14, 21, 22, 23, 6, 7, 8, 15, 16, 17, 24, 25, 26, 27, 28, 29, 36, 37, 38, 45, 46, 47, 30, 31, 32, 39, 40, 41, 48, 49, 50, 33, 34, 35, 42, 43, 44, 51, 52, 53, 54, 55, 56, 63, 64, 65, 72, 73, 74, 57, 58, 59, 66, 67, 68, 75, 76, 77, 60, 61, 62, 69, 70, 71, 78, 79, 80};
-        int counter = 0;
+        Num counter = 0;
         std::string linebreak = " |-----------------------|\n";
-        for (const int i : ordering) {
+        for (const auto &i : ordering) {
             board = i / 9;
             square = i % 9;
             if (counter % 9 == 0 && i != 0)
@@ -338,11 +342,11 @@ class State {
         std::cout << linebreak << "\n\n";
     }
 
-    auto num_legal_moves() const -> short {
+    auto num_legal_moves() const -> Num {
         if (forcingBoard != -1)
             return 9 - popcount(metaposition[forcingBoard].union_bb());
-        short cnt = 0;
-        for (short i = 0; i < 9; i++) {
+        Num cnt = 0;
+        for (Num i = 0; i < 9; i++) {
             if (!metaposition[i].is_board_dead())
                 cnt += 9 - popcount(metaposition[i].union_bb());
         }
@@ -355,10 +359,10 @@ class State {
             forcingBoard = -1;
         if (forcingBoard == -1) {
             moves.reserve(81);
-            auto bcounter = 0;
+            Num bcounter = 0;
             for (const auto &board : metaposition) {
                 if (!board.is_board_dead()) {
-                    auto bb = ~board.union_bb() & 0b111111111;
+                    int_fast16_t bb = ~board.union_bb() & 0b111111111;
                     for (; bb;) {
                         moves.push_back(bcounter * 9 + (lsb(bb)));
                         bb &= bb - 1;  // clear the least significant bit set
@@ -368,7 +372,7 @@ class State {
             }
         } else {
             moves.reserve(9);
-            auto bb = ~metaposition[forcingBoard].union_bb() & 0b111111111;
+            Bitboard bb = ~metaposition[forcingBoard].union_bb() & 0b111111111;
             for (; bb;) {
                 moves.push_back(forcingBoard * 9 + (lsb(bb)));
                 bb &= bb - 1;  // clear the least significant bit set
@@ -381,17 +385,23 @@ class State {
         std::vector<Move> moves = legal_moves();
         play(moves[rand() % moves.size()]);
     }
+
+    inline auto heuristic_value() const -> int_fast8_t {
+        return rand() & 0b1111;
+    }
 };
 
-bool operator==(const State &a, const State &b) {
+bool operator==(const Board::SubState &a, const Board::SubState &b) {
+    return a.position == b.position;
+}
+
+bool operator==(const UTTT::State &a, const UTTT::State &b) {
     if (a.forcingBoard != b.forcingBoard)
         return false;
     if (a.turn != b.turn)
         return false;
     for (short i = 0; i < 9; i++) {
-        if (a.metaposition[i].position[0] != b.metaposition[i].position[0])
-            return false;
-        if (a.metaposition[i].position[1] != b.metaposition[i].position[1])
+        if (a.metaposition[i].position != b.metaposition[i].position)
             return false;
     }
     if (a.forcingstack != b.forcingstack)
@@ -399,15 +409,3 @@ bool operator==(const State &a, const State &b) {
     return a.movestack == b.movestack;
 }
 }  // namespace UTTT
-
-// int main()
-// {
-//     UTTT::State board = UTTT::State();
-//     board.show();
-//     while (!board.is_game_over())
-//     {
-//         board.random_play();
-//         board.show();
-//     }
-//     return 0;
-// }

@@ -2,8 +2,8 @@
 
 #include <bitset>
 
-inline auto popcount(const short bb) -> short {
-    return std::bitset<16>(bb).count();
+inline auto popcount(const int_fast16_t bb) -> int_fast8_t {
+    return __builtin_popcount(bb);
 }
 
 template <class T>
@@ -18,6 +18,6 @@ auto string(std::vector<T> v) -> std::string {
     return builder;
 }
 
-auto lsb(short bitboard) -> int {
-    return __builtin_ffs((int)bitboard) - 1;
+auto lsb(int_fast16_t bitboard) -> int_fast8_t {
+    return __builtin_ffs(bitboard) - 1;
 }

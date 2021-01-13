@@ -4,13 +4,14 @@
 #include "accelerations.hpp"
 
 namespace Glyph {
-using Move = short;
+using Move = int_fast8_t;
+using Bitboard = int_fast16_t;
 constexpr auto gameexpfactor = 5;
 class State {
    public:
-    short position[2] = {0b000000000, 0b000000000};
-    short turn = 1;
-    std::vector<short> movestack;
+    std::array<Bitboard, 2> position = {0b000000000, 0b000000000};
+    int_fast8_t turn = 1;
+    std::vector<Move> movestack;
 
     void mem_setup() {
         movestack.reserve(9);
@@ -21,7 +22,7 @@ class State {
         position[1] = 0b000000000;
     }
 
-    void play(const short i) {
+    void play(const Move i) {
         // n ^ (1 << k) is a binary XOR where you flip the kth bit of n
         if (turn == 1)
             position[0] |= (1 << i);
@@ -33,7 +34,7 @@ class State {
 
     void unplay()  // do not unplay on root
     {
-        short prevmove = movestack.back();
+        Move prevmove = movestack.back();
         movestack.pop_back();
         if (turn == 1)
             position[1] &= ~(1 << prevmove);
@@ -42,14 +43,14 @@ class State {
         turn = -turn;
     }
 
-    auto pos_filled(const short i) -> bool {
+    auto pos_filled(const int_fast8_t i) const -> bool {
         if (((position[0] | position[1]) & (1L << i)) != 0)
             return true;
         else
             return false;
     }
 
-    auto player_at(const short i) -> bool  //only valid to use if pos_filled() returns true, true = x, false = y
+    auto player_at(const int_fast8_t i) const -> bool  //only valid to use if pos_filled() returns true, true = x, false = y
     {
         if ((position[0] & (1L << i)) != 0)
             return true;
@@ -57,15 +58,15 @@ class State {
             return false;
     }
 
-    auto is_full() -> bool {
-        for (short i = 0; i < 9; i++) {
+    auto is_full() const -> bool {
+        for (int_fast8_t i = 0; i < 9; i++) {
             if (!pos_filled(i))
                 return false;
         }
         return true;
     }
 
-    auto evaluate() -> short {
+    auto evaluate() const -> int_fast8_t {
         // check first diagonal
         if (pos_filled(0) && pos_filled(4) && pos_filled(8)) {
             if (player_at(0) == player_at(4) && player_at(4) == player_at(8)) {
@@ -85,7 +86,7 @@ class State {
             }
         }
         // check rows
-        for (short i = 0; i < 3; i++) {
+        for (int_fast8_t i = 0; i < 3; i++) {
             if (pos_filled(i * 3) && pos_filled(i * 3 + 1) && pos_filled(i * 3 + 2)) {
                 if (player_at(i * 3) == player_at(i * 3 + 1) && player_at(i * 3 + 1) == player_at(i * 3 + 2)) {
                     if (player_at(i * 3))
@@ -96,7 +97,7 @@ class State {
             }
         }
         // check columns
-        for (short i = 0; i < 3; i++) {
+        for (int_fast8_t i = 0; i < 3; i++) {
             if (pos_filled(i) && pos_filled(i + 3) && pos_filled(i + 6)) {
                 if (player_at(i) == player_at(i + 3) && player_at(i + 3) == player_at(i + 6)) {
                     if (player_at(i))
@@ -113,9 +114,9 @@ class State {
         turn = -turn;
     }
 
-    void show() {
-        for (short x = 0; x < 3; x++) {
-            for (short y = 0; y < 3; y++) {
+    void show() const {
+        for (int_fast8_t x = 0; x < 3; x++) {
+            for (int_fast8_t y = 0; y < 3; y++) {
                 if (pos_filled(x * 3 + y)) {
                     if (player_at(x * 3 + y))
                         std::cout << "X ";
@@ -129,20 +130,21 @@ class State {
         std::cout << "\n";
     }
 
-    auto is_game_over() -> bool {
+    auto is_game_over() const -> bool {
         return (evaluate() != 0) || is_full();
     }
 
-    auto num_legal_moves() {
+    auto num_legal_moves() const {
         return 9 - popcount(position[0] | position[1]);
     }
 
-    auto legal_moves() -> std::vector<Move> {
+    auto legal_moves() const -> std::vector<Move> {
         std::vector<Move> moves;
         moves.reserve(9);
-        for (short i = 0; i < 9; i++) {
-            if (!pos_filled(i))
-                moves.push_back(i);
+        Bitboard bb = ~(position[0] | position[1]) & 0b111111111;
+        for (; bb;) {
+            moves.push_back(lsb(bb));
+            bb &= bb - 1;  // clear the least significant bit set
         }
         return moves;
     }
@@ -152,7 +154,7 @@ class State {
         play(moves[rand() % moves.size()]);
     }
 
-    auto heuristic_value() -> int {
+    auto heuristic_value() const -> int_fast8_t {
         return 0;
     }
 };
@@ -160,9 +162,7 @@ class State {
 bool operator==(const State a, const State b) {
     if (a.turn != b.turn)
         return false;
-    if (a.position[0] != b.position[0])
-        return false;
-    if (a.position[1] != b.position[1])
+    if (a.position != b.position)
         return false;
     return a.movestack == b.movestack;
 }

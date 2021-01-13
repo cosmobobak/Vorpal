@@ -21,9 +21,9 @@ constexpr auto EXP_FACTOR = gameexpfactor;
 
 class TreeNode {
    public:
-    int winScore = 0;
-    int visits = 0;
-    short playerNo;
+    int_fast32_t winScore = 0;
+    int_fast32_t visits = 0;
+    int_fast8_t playerNo;
     State board;
     TreeNode *parent = nullptr;
     std::vector<TreeNode *> children;
@@ -32,15 +32,15 @@ class TreeNode {
         this->board = board;
     }
 
-    void set_player_no(const short playerNo) {
+    void set_player_no(const int_fast8_t playerNo) {
         this->playerNo = playerNo;
     }
 
-    auto get_player_no() -> short {
+    auto get_player_no() const -> int_fast8_t {
         return playerNo;
     }
 
-    auto get_opponent() -> short {
+    auto get_opponent() const -> int_fast8_t {
         return -playerNo;
     }
 
@@ -62,7 +62,7 @@ class TreeNode {
         std::cout << "and I have " << children.size() << " children.\n";
     }
 
-    auto get_children() -> std::vector<TreeNode *> {
+    auto get_children() const -> std::vector<TreeNode *> {
         return children;
     }
 
@@ -77,15 +77,15 @@ class TreeNode {
         }
     }
 
-    auto get_win_score() -> int {
+    auto get_win_score() const -> int_fast32_t {
         return winScore;
     }
 
-    auto get_visit_count() -> int {
+    auto get_visit_count() const -> int_fast32_t {
         return visits;
     }
 
-    auto get_parent_visits() -> int {
+    auto get_parent_visits() const -> int_fast32_t {
         return parent->get_visit_count();
     }
 
@@ -93,19 +93,19 @@ class TreeNode {
         visits++;
     }
 
-    void add_score(const int s) {
+    void add_score(const int_fast32_t s) {
         winScore += s;
     }
 
-    void set_win_score(const int s) {
+    void set_win_score(const int_fast32_t s) {
         winScore = s;
     }
 
-    auto get_parent() -> TreeNode * {
+    auto get_parent() const -> TreeNode * {
         return parent;
     }
 
-    auto get_state() -> State {
+    auto get_state() const -> State {
         return board;
     }
 
@@ -113,7 +113,7 @@ class TreeNode {
         return children[rand() % children.size()];
     }
 
-    auto get_winrate() -> double {
+    auto get_winrate() const -> double {
         return (double)winScore / (double)visits;
     }
 
@@ -138,14 +138,14 @@ class TreeNode {
         return board.legal_moves()[std::distance(children.begin(), result)];
     }
 
-    void show_child_winrates() {
+    void show_child_winrates() const {
         for (const auto &child : children) {
             std::cout << child->get_win_score() << " ";
         }
         std::cout << "\n";
     }
 
-    void show_child_visitrates() {
+    void show_child_visitrates() const {
         for (const auto &child : children) {
             std::cout << child->get_visit_count() << " ";
         }
@@ -154,7 +154,7 @@ class TreeNode {
 };
 
 namespace UCT {
-auto uct_value(const int totalVisit, const double nodeWinScore, const int nodeVisit) -> double {
+auto uct_value(const int_fast32_t totalVisit, const double nodeWinScore, const int_fast32_t nodeVisit) -> double {
     if (nodeVisit == 0) {
         return INT_MAX;
     }
@@ -182,24 +182,23 @@ auto best_node_uct(TreeNode *const node) -> TreeNode * {
     return children[std::distance(children.begin(), result)];
 }
 };  // namespace UCT
-
+constexpr int_fast8_t WIN_SCORE = 10;
 class MCTS {
    public:
-    const short WIN_SCORE = 10;
     long long timeLimit;        // limiter on search time
     const bool memsafe = true;  // dictates whether we preserve a part of the tree across moves
-    short opponent;             // the win score that the opponent wants
-    short reward;               // the win score that the agent wants
-    int nodes = 0;
+    int_fast8_t opponent;       // the win score that the opponent wants
+    int_fast8_t reward;         // the win score that the agent wants
+    int_fast32_t nodes = 0;
     TreeNode *preservedNode = nullptr;
 
     MCTS() {
         MCTS(1);
     }
-    MCTS(const short player) {
+    MCTS(const int_fast16_t player) {
         MCTS(player, 3);
     }
-    MCTS(const short player, const long long strength) {
+    MCTS(const int_fast16_t player, const long long strength) {
         srand(time(NULL));
         timeLimit = strength;
         opponent = -player;
@@ -215,7 +214,7 @@ class MCTS {
         delete root;
     }
 
-    void set_opponent(const short i) {
+    void set_opponent(const int_fast16_t i) {
         opponent = i;
         reward = -i;
     }
@@ -262,20 +261,21 @@ class MCTS {
             if (promisingNode->get_children().size() != 0)
                 nodeToExplore = promisingNode->random_child();
 
-            short playoutResult = simulate_playout(nodeToExplore);
+            int_fast8_t playoutResult = simulate_playout(nodeToExplore);
             backpropagate(nodeToExplore, playoutResult);
 
-            /*if (std::chrono::steady_clock::now() > breakunit){
+            // if (std::chrono::steady_clock::now() > breakunit) {
             //     std::cout << "The best move so far is: " << rootNode->best_child_as_move() + 1 << '\n';
-                breakunit += std::chrono::milliseconds(500);
-                rootNode->show_child_visitrates();
-            }*/
+            //     breakunit += std::chrono::milliseconds(500);
+            //     // rootNode->show_child_visitrates();
+            // }
         }
         State out = rootNode->best_child()->get_state();
         // std::cerr << "ZERO:\n";
-        std::cerr << nodes << " nodes processed.\n";
+        // std::cerr << nodes << " nodes processed.\n";
+        std::cout << nodes << ", ";
         // std::cerr << "Zero win prediction: " << (int)(rootNode->best_child()->get_winrate() * (100 / WIN_SCORE)) << "%\n";
-        short action, sboard, square, row, col;
+        int_fast8_t action, sboard, square, row, col;
         action = rootNode->best_child_as_move();
         // assert(action >= 0 && action <= 80);
         // std::cout << action << '\n';
@@ -304,7 +304,7 @@ class MCTS {
         node->expand();
     }
 
-    inline void backpropagate(TreeNode *nodeToExplore, const short winner) {
+    inline void backpropagate(TreeNode *nodeToExplore, const int_fast16_t winner) {
         TreeNode *tempNode = nodeToExplore;
         while (tempNode) {
             tempNode->increment_visits();
@@ -315,11 +315,11 @@ class MCTS {
         }
     }
 
-    inline auto simulate_playout(TreeNode *node) -> short {
+    inline auto simulate_playout(TreeNode *node) -> int_fast16_t {
         nodes++;
         State tempState = node->get_state();
         tempState.mem_setup();
-        short boardStatus = tempState.evaluate();
+        int_fast8_t boardStatus = tempState.evaluate();
         if (boardStatus == opponent) {
             node->get_parent()->set_win_score(INT_MIN);
             return boardStatus;
@@ -392,39 +392,40 @@ class Zero {
 class Istus {
    public:
     State node;
-    int nodes;
-    int timeLimit;
-    short d;
-    short bestcase;
-    short score;
+    int_fast32_t nodes;
+    long long timeLimit;
 
     Istus() {
         Istus(99);
     }
-    Istus(const int TL) {
+    Istus(const long long TL) {
         timeLimit = TL;
     }
 
-    auto negamax(int depth = 10, int colour = 1, int a = -2, int b = 2) -> int  //WORKING
+    auto negamax(
+        int_fast8_t depth = 10, 
+        int_fast8_t colour = 1, 
+        int_fast16_t a = -2, 
+        int_fast16_t b = 2) -> int_fast16_t  //WORKING
     {
         if (depth < 1) {
             nodes++;
-            return colour * node.evaluate();
+            return colour * (node.evaluate() * 10000 + node.heuristic_value());
         }
 
         if (node.is_game_over()) {
             nodes++;
-            return colour * node.evaluate() * depth;
+            return colour * (node.evaluate() * 10000 * depth);
         }
-        int score;
+        int_fast16_t score;
 
-        node.pass_turn();                              // MAKE A NULL MOVE
-        score = -negamax(depth - 3, -colour, -b, -a);  // PERFORM A LIMITED SEARCH
-        node.pass_turn();                              // UNMAKE NULL MOVE
-        if (score > a)
-            a = score;
-        if (a >= b)
-            return a;
+        // node.pass_turn();                              // MAKE A NULL MOVE
+        // score = -negamax(depth - 3, -colour, -b, -a);  // PERFORM A LIMITED SEARCH
+        // node.pass_turn();                              // UNMAKE NULL MOVE
+        // if (score > a)
+        //     a = score;
+        // if (a >= b)
+        //     return a;
 
         for (const auto &move : node.legal_moves()) {
             node.play(move);
@@ -443,15 +444,15 @@ class Istus {
 
     void engine_move()  //WORKING
     {
-        nodes = 0;
-        bestcase = -2;
         Move bestmove;
-        d = 0;
-
+        int_fast16_t bestcase = INT_FAST16_MIN;
+        int_fast8_t d = 8;
+        int_fast16_t score;
+        nodes = 0;
         auto end = std::chrono::steady_clock::now();
         end += std::chrono::milliseconds(timeLimit);
         while (std::chrono::steady_clock::now() < end && d < 22) {
-            bestcase = -2;
+            bestcase = INT_FAST16_MIN;
             for (const auto &move : node.legal_moves()) {
                 node.play(move);
                 score = -negamax(d, node.turn);
@@ -462,6 +463,7 @@ class Istus {
                 }
             }
             d += 1;
+            // std::cout << "depth: " << (int)d << " best move: " << (int)bestmove << " score: " << (int)bestcase << "\n";
         }
         std::cout << "ISTUS:\n";
         std::cout << nodes << " nodes processed.\n";
@@ -473,7 +475,7 @@ class Istus {
         nodes = 0;
     }
 
-    void show_result() {
+    void show_result() const {
         int r;
         r = node.evaluate();
         if (r == 0)
@@ -484,7 +486,7 @@ class Istus {
             std::cout << "0-1" << '\n';
     }
 
-    void print(const std::string input, const std::string end = "\n") {
+    void print(const std::string input, const std::string end = "\n") const {
         std::cout << input << end;
     }
 
@@ -565,21 +567,18 @@ inline void run_mcts_game(const long long TL) {
 }
 
 inline void selfplay(const long long TL) {
+    bool ans1, ans2;
+    // std::cout << "Engine 1: Zero / Istus [0/1]: ";
+    // std::cin >> ans1;
+    // std::cout << "Engine 2: Zero / Istus [0/1]: ";
+    // std::cin >> ans2;
     Zero engine1 = Zero(TL);
-    Zero engine2 = Zero(TL);
+    // Istus engine1i = Istus(TL);
+    // Zero engine2z = Zero(TL);
+    Istus engine2 = Istus(TL);
     int eturn = 1;
-    // std::cout << "1 for Zero first, -1 for Istus first.\n--> ";
-    // std::cin >> eturn;
     while (!engine1.node.is_game_over() && !engine2.node.is_game_over()) {
         engine1.node.show();
-        std::cout << string(engine1.node.legal_moves()) << '\n';
-        std::cout << string(engine2.node.legal_moves()) << '\n';
-        std::cout << "efficient counter: "
-                  << engine1.node.num_legal_moves()
-                  << " actual counter: "
-                  << engine1.node.legal_moves().size()
-                  << '\n';
-        // assert(engine1.node.num_legal_moves() == engine1.node.legal_moves().size());
         if (eturn == -1) {
             engine1.engine_move();
             engine2.node = engine1.node;
@@ -632,6 +631,7 @@ inline void benchmark() {
         engine2.engine_move();
         Zero engine3 = Zero(tcs[i]);
         engine3.engine_move();
+        std::cout << '\n';
     }
 }
 

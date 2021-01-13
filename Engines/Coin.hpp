@@ -5,15 +5,16 @@
 #include "accelerations.hpp"
 
 namespace Coin {
-constexpr std::array<int, 7> weights = {1, 2, 3, 4, 3, 2, 1};
-constexpr std::array<int, 2> players = {-1, 1};
-using Move = short;
+constexpr std::array<int_fast8_t, 7> weights = {1, 2, 3, 4, 3, 2, 1};
+constexpr std::array<int_fast8_t, 2> players = {-1, 1};
+using Move = int_fast8_t;
+using Bitboard = int_fast8_t;
 constexpr auto gameexpfactor = 5;  // dubious
 class State {
    public:
-    std::array<std::array<int, 6>, 2> bbnode = {0};
-    int turn = 1;
-    int nodes = 0;
+    std::array<std::array<Bitboard, 6>, 2> bbnode = {0};
+    int_fast8_t turn = 1;
+    int_fast32_t nodes = 0;
     std::vector<Move> movestack;
 
     State() {
@@ -24,29 +25,18 @@ class State {
         movestack.reserve(7 * 6);
     }
 
-    // void reset()
-    // {
-    //     for (int row = 0; row < 6; row++)
-    //     {
-    //         for (int col = 0; col < 7; col++)
-    //         {
-    //             node[row][col] = 0;
-    //         }
-    //     }
-    // }
-
-    auto union_bb(short r) -> short {
+    auto union_bb(int_fast8_t r) const -> Bitboard {
         return bbnode[0][r] | bbnode[1][r];
     }
 
-    auto is_full() -> bool  //WORKING
+    auto is_full() const -> bool  //WORKING
     {
         return union_bb(0) == 0b1111111;
     }
 
-    void show()  //WORKING
+    void show() const  //WORKING
     {
-        short row, col;
+        int_fast8_t row, col;
         for (row = 0; row < 6; ++row) {
             for (col = 0; col < 7; ++col) {
                 if (pos_filled(row, col)) {
@@ -62,30 +52,30 @@ class State {
         std::cout << '\n';
     }
 
-    auto pos_filled(short row, short col) -> bool {
+    auto pos_filled(int_fast8_t row, int_fast8_t col) const -> bool {
         return bbnode[0][row] & (1 << col) || bbnode[1][row] & (1 << col);
     }
 
-    auto pos_filled(short col) -> bool {
+    auto pos_filled(int_fast8_t col) const -> bool {
         return bbnode[0][0] & (1 << col) || bbnode[1][0] & (1 << col);
     }
 
-    auto player_at(short row, short col) -> bool  //only valid to use if pos_filled() returns true, true = x, false = y
+    auto player_at(int_fast8_t row, int_fast8_t col) const -> bool  //only valid to use if pos_filled() returns true, true = x, false = y
     {
         return (bbnode[0][row] & (1 << col));
     }
 
-    auto num_legal_moves() -> short {
+    auto num_legal_moves() const -> int_fast8_t {
         return 7 - popcount(bbnode[0][0] | bbnode[1][0]);
     }
 
-    auto legal_moves() -> std::vector<Move> {
+    auto legal_moves() const -> std::vector<Move> {
         std::vector<Move> moves;
         moves.reserve(7);
-        int toprow = bbnode[0][0] | bbnode[1][0];
-        for (short col = 0; col < 7; col++) {
-            if (!(toprow & (1 << col)))
-                moves.push_back(col);
+        int_fast8_t bb = ~(bbnode[0][0] | bbnode[1][0]) & 0b1111111;
+        for (; bb;) {
+            moves.push_back(lsb(bb));
+            bb &= bb - 1;  // clear the least significant bit set
         }
         return moves;
     }
@@ -99,9 +89,9 @@ class State {
         turn = -turn;
     }
 
-    void play(short col)  //WORKING
+    void play(Move col)  //WORKING
     {
-        for (short row = 6; row; row--) {
+        for (int_fast8_t row = 6; row; row--) {
             if (!pos_filled(row - 1, col)) {
                 if (turn == 1)
                     bbnode[0][row - 1] |= (1 << col);
@@ -116,9 +106,9 @@ class State {
 
     void unplay()  //WORKING
     {
-        int col = movestack.back();
+        Move col = movestack.back();
         movestack.pop_back();
-        for (int row = 0; row < 6; row++) {
+        for (int_fast8_t row = 0; row < 6; row++) {
             if (pos_filled(row, col)) {
                 if (turn == 1)
                     bbnode[1][row] &= ~(1 << col);
@@ -130,9 +120,9 @@ class State {
         pass_turn();
     }
 
-    auto horizontal_term() -> int {
-        for (short row = 0; row < 6; row++) {
-            for (short col = 0; col < 4; col++) {
+    auto horizontal_term() const -> int_fast8_t {
+        for (int_fast8_t row = 0; row < 6; row++) {
+            for (int_fast8_t col = 0; col < 4; col++) {
                 if (pos_filled(row, col) &&
                     pos_filled(row, col + 1) &&
                     pos_filled(row, col + 2) &&
@@ -151,9 +141,9 @@ class State {
         return 0;
     }
 
-    auto vertical_term() -> int {
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 7; col++) {
+    auto vertical_term() const -> int_fast8_t {
+        for (int_fast8_t row = 0; row < 3; row++) {
+            for (int_fast8_t col = 0; col < 7; col++) {
                 if (pos_filled(row, col) &&
                     pos_filled(row + 1, col) &&
                     pos_filled(row + 2, col) &&
@@ -172,9 +162,9 @@ class State {
         return 0;
     }
 
-    auto diagup_term() -> int {
-        for (int row = 3; row < 6; row++) {
-            for (int col = 0; col < 4; col++) {
+    auto diagup_term() const -> int_fast8_t {
+        for (int_fast8_t row = 3; row < 6; row++) {
+            for (int_fast8_t col = 0; col < 4; col++) {
                 if (pos_filled(row, col) &&
                     pos_filled(row - 1, col + 1) &&
                     pos_filled(row - 2, col + 2) &&
@@ -193,9 +183,9 @@ class State {
         return 0;
     }
 
-    auto diagdown_term() -> int {
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 4; col++) {
+    auto diagdown_term() const -> int_fast8_t {
+        for (int_fast8_t row = 0; row < 3; row++) {
+            for (int_fast8_t col = 0; col < 4; col++) {
                 if (pos_filled(row, col) &&
                     pos_filled(row + 1, col + 1) &&
                     pos_filled(row + 2, col + 2) &&
@@ -214,8 +204,8 @@ class State {
         return 0;
     }
 
-    auto evaluate() -> int {
-        int v, h, u, d;
+    auto evaluate() const -> int_fast8_t {
+        int_fast8_t v, h, u, d;
         v = vertical_term();
         if (v)
             return v;
@@ -232,9 +222,9 @@ class State {
         return 0;
     }
 
-    void show_result()  //WORKING
+    void show_result() const  //WORKING
     {
-        int r;
+        int_fast8_t r;
         r = evaluate();
         if (r == 0) {
             std::cout << "1/2-1/2" << '\n';
@@ -245,7 +235,7 @@ class State {
         }
     }
 
-    auto is_game_over() -> int {
+    auto is_game_over() const -> bool {
         if (evaluate() != 0 || is_full() == true) {
             return true;
         } else {
@@ -253,27 +243,22 @@ class State {
         }
     }
 
-    // auto heuristic_value() -> int
-    // {
-    //     int val = 0;
-    //     for (short row = 0; row < 6; row++)
-    //     {
-    //         for (short i = 0; i < 7; i++)
-    //         {
-    //             val += pos_filled(row, i) * (player_at(row, i) ? 1 : -1) * weights[i];
-    //         }
-    //     }
-    //     return -(val * 10); // use some sort of central weighting approach
-    // }
+    auto heuristic_value() -> int_fast8_t {
+        int_fast8_t val = 0;
+        for (int_fast8_t row = 0; row < 6; row++) {
+            for (int_fast8_t i = 0; i < 7; i++) {
+                val += pos_filled(row, i) * (player_at(row, i) ? 1 : -1) * weights[i];
+            }
+        }
+        return -(val * 10);  // use some sort of central weighting approach
+    }
 };
 
 bool operator==(State a, State b) {
     if (a.turn != b.turn)
         return false;
-    for (int row = 6; row; row--) {
-        if (a.bbnode[0][row] != b.bbnode[0][row] || a.bbnode[1][row] != b.bbnode[1][row])
-            return false;
-    }
+    if (a.bbnode[0] != b.bbnode[0] || a.bbnode[1] != b.bbnode[1])
+        return false;
     return a.movestack == b.movestack;
 }
 }  // namespace Coin
