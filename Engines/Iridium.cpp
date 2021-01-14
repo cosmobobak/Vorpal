@@ -154,14 +154,17 @@ class TreeNode {
 };
 
 namespace UCT {
-auto uct_value(const int_fast32_t totalVisit, const double nodeWinScore, const int_fast32_t nodeVisit) -> double {
+inline auto uct_value(
+    const double totalVisit,
+    const double nodeWinScore,
+    const double nodeVisit) -> double {
     if (nodeVisit == 0) {
         return INT_MAX;
     }
-    return ((double)nodeWinScore / (double)nodeVisit) + 1.41 * sqrt(log(totalVisit) / (double)nodeVisit) * EXP_FACTOR;
+    return (nodeWinScore / nodeVisit) + 1.41 * sqrt(log(totalVisit) / nodeVisit) * EXP_FACTOR;
 }
 
-auto uct_compare(TreeNode *const a, TreeNode *const b) -> bool {
+inline auto uct_compare(TreeNode *const a, TreeNode *const b) -> bool {
     return (
         uct_value(
             a->get_parent_visits(),
@@ -173,7 +176,7 @@ auto uct_compare(TreeNode *const a, TreeNode *const b) -> bool {
             b->get_visit_count()));
 }
 
-auto best_node_uct(TreeNode *const node) -> TreeNode * {
+inline auto best_node_uct(TreeNode *const node) -> TreeNode * {
     auto children = node->get_children();
     std::vector<TreeNode *>::iterator result;
     result = std::max_element(
@@ -403,9 +406,9 @@ class Istus {
     }
 
     auto negamax(
-        int_fast8_t depth = 10, 
-        int_fast8_t colour = 1, 
-        int_fast16_t a = -2, 
+        int_fast8_t depth = 10,
+        int_fast8_t colour = 1,
+        int_fast16_t a = -2,
         int_fast16_t b = 2) -> int_fast16_t  //WORKING
     {
         if (depth < 1) {
@@ -575,7 +578,7 @@ inline void selfplay(const long long TL) {
     Zero engine1 = Zero(TL);
     // Istus engine1i = Istus(TL);
     // Zero engine2z = Zero(TL);
-    Istus engine2 = Istus(TL);
+    Zero engine2 = Zero(TL);
     int eturn = 1;
     while (!engine1.node.is_game_over() && !engine2.node.is_game_over()) {
         engine1.node.show();
