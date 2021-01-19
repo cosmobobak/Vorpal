@@ -599,7 +599,7 @@ auto _carry_rippler(Bitboard mask) -> std::vector<Bitboard>
     return out;
 }
 
-auto _attack_table(std::vector<int> deltas) -> std::pair<std::vector<Bitboard>, std::vector<std::map<Bitboard, Bitboard>>>
+auto _attack_table(const std::vector<int> deltas) -> std::pair<std::vector<Bitboard>, std::vector<std::map<Bitboard, Bitboard>>>
 {
     std::vector<Bitboard> mask_table;
     std::vector<std::map<Bitboard, Bitboard>> attack_table;
@@ -619,9 +619,17 @@ auto _attack_table(std::vector<int> deltas) -> std::pair<std::vector<Bitboard>, 
     return std::pair(mask_table, attack_table);
 }
 
-auto [BB_DIAG_MASKS, BB_DIAG_ATTACKS] = _attack_table({-9, -7, 7, 9});
-auto [BB_FILE_MASKS, BB_FILE_ATTACKS] = _attack_table({-8, 8});
-auto [BB_RANK_MASKS, BB_RANK_ATTACKS] = _attack_table({-1, 1});
+const std::vector<int> v1 = {-9, -7, 7, 9};
+const std::vector<int> v2 = {-8, 8};
+const std::vector<int> v3 = {-1, 1};
+
+constexpr auto diag = _attack_table(v1);
+constexpr auto file = _attack_table(v2);
+constexpr auto rank = _attack_table(v3);
+
+auto [BB_DIAG_MASKS, BB_DIAG_ATTACKS];
+auto [BB_FILE_MASKS, BB_FILE_ATTACKS];
+auto [BB_RANK_MASKS, BB_RANK_ATTACKS];
 
 auto _rays() -> std::vector<std::vector<Bitboard>>
 {

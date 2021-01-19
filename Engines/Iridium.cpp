@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "Coin.hpp"
+#include "Coin4x4.hpp"
 #include "Glyph.hpp"
 #include "UTTT.hpp"
 
@@ -164,7 +165,7 @@ inline auto uct_value(
     return (nodeWinScore / nodeVisit) + 1.41 * sqrt(log(totalVisit) / nodeVisit) * EXP_FACTOR;
 }
 
-inline auto uct_compare(TreeNode *const a, TreeNode *const b) -> bool {
+inline auto uct_compare(const TreeNode *a, const TreeNode *b) -> bool {
     return (
         uct_value(
             a->get_parent_visits(),
@@ -176,7 +177,7 @@ inline auto uct_compare(TreeNode *const a, TreeNode *const b) -> bool {
             b->get_visit_count()));
 }
 
-inline auto best_node_uct(TreeNode *const node) -> TreeNode * {
+inline auto best_node_uct(const TreeNode *node) -> TreeNode * {
     auto children = node->get_children();
     std::vector<TreeNode *>::iterator result;
     result = std::max_element(
@@ -274,10 +275,10 @@ class MCTS {
             // }
         }
         State out = rootNode->best_child()->get_state();
-        // std::cerr << "ZERO:\n";
-        // std::cerr << nodes << " nodes processed.\n";
-        std::cout << nodes << ", ";
-        // std::cerr << "Zero win prediction: " << (int)(rootNode->best_child()->get_winrate() * (100 / WIN_SCORE)) << "%\n";
+        std::cout << "ZERO:\n";
+        std::cout << nodes << " nodes processed.\n";
+        // std::cout << nodes << ", ";
+        std::cout << "Zero win prediction: " << (int)(rootNode->best_child()->get_winrate() * (100 / WIN_SCORE)) << "%\n";
         int_fast8_t action, sboard, square, row, col;
         action = rootNode->best_child_as_move();
         // assert(action >= 0 && action <= 80);
@@ -445,6 +446,32 @@ class Istus {
         return a;
     }
 
+    auto dnegamax(
+        int_fast8_t colour = 1,
+        int_fast16_t a = -2,
+        int_fast16_t b = 2) -> int_fast16_t  //WORKING
+    {
+        if (node.is_game_over()) {
+            nodes++;
+            return colour * node.evaluate();
+        }
+        int_fast16_t score;
+
+        for (const auto &move : node.legal_moves()) {
+            node.play(move);
+            nodes += 1;
+            score = -dnegamax(-colour, -b, -a);
+            node.unplay();
+
+            if (score >= b)
+                return b;
+            if (score > a)
+                a = score;
+        }
+
+        return a;
+    }
+
     void engine_move()  //WORKING
     {
         Move bestmove;
@@ -466,7 +493,7 @@ class Istus {
                 }
             }
             d += 1;
-            // std::cout << "depth: " << (int)d << " best move: " << (int)bestmove << " score: " << (int)bestcase << "\n";
+            std::cout << "depth: " << (int)d << " best move: " << (int)bestmove << " score: " << (int)bestcase << "\n";
         }
         std::cout << "ISTUS:\n";
         std::cout << nodes << " nodes processed.\n";
@@ -637,6 +664,14 @@ inline void benchmark() {
         std::cout << '\n';
     }
 }
+
+// inline void analysis() {
+//     for (int i = 0; i < 9; i++)
+//     {
+        
+//     }
+    
+// }
 
 int main() {
     std::cout << "Play against Zero [0] | Play against Istus [1] | Watch a self-play game [2] | Play with a friend [3] | Run tests [4] | Benchmark [5]\n--> ";

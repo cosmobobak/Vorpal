@@ -4,15 +4,15 @@
 
 #include "accelerations.hpp"
 
-namespace Coin {
-constexpr std::array<int_fast8_t, 7> weights = {1, 2, 3, 4, 3, 2, 1};
+namespace Coin4x4 {
+constexpr std::array<int_fast8_t, 4> weights = {2, 1, 1, 2};
 constexpr std::array<int_fast8_t, 2> players = {-1, 1};
 using Move = int_fast8_t;
 using Bitboard = int_fast8_t;
 constexpr auto gameexpfactor = 5;  // dubious
 class State {
    public:
-    std::array<std::array<Bitboard, 6>, 2> bbnode = {0};
+    std::array<std::array<Bitboard, 4>, 2> bbnode = {0};
     int_fast8_t turn = 1;
     int_fast32_t nodes = 0;
     std::vector<Move> movestack;
@@ -22,23 +22,23 @@ class State {
     }
 
     void mem_setup() {
-        movestack.reserve(7 * 6);
+        movestack.reserve(4 * 4);
     }
 
-    auto union_bb(const int_fast8_t r) const -> Bitboard {
+    auto union_bb(int_fast8_t r) const -> Bitboard {
         return bbnode[0][r] | bbnode[1][r];
     }
 
     auto is_full() const -> bool  //WORKING
     {
-        return union_bb(0) == 0b1111111;
+        return union_bb(0) == 0b1111;
     }
 
     void show() const  //WORKING
     {
         int_fast8_t row, col;
-        for (row = 0; row < 6; ++row) {
-            for (col = 0; col < 7; ++col) {
+        for (row = 0; row < 4; ++row) {
+            for (col = 0; col < 4; ++col) {
                 if (pos_filled(row, col)) {
                     if (player_at(row, col))
                         std::cout << "X ";
@@ -52,27 +52,27 @@ class State {
         std::cout << '\n';
     }
 
-    auto pos_filled(const int_fast8_t row, const int_fast8_t col) const -> bool {
+    auto pos_filled(int_fast8_t row, int_fast8_t col) const -> bool {
         return bbnode[0][row] & (1 << col) || bbnode[1][row] & (1 << col);
     }
 
-    auto pos_filled(const int_fast8_t col) const -> bool {
+    auto pos_filled(int_fast8_t col) const -> bool {
         return bbnode[0][0] & (1 << col) || bbnode[1][0] & (1 << col);
     }
 
-    auto player_at(const int_fast8_t row, const int_fast8_t col) const -> bool  //only valid to use if pos_filled() returns true, true = x, false = y
+    auto player_at(int_fast8_t row, int_fast8_t col) const -> bool  //only valid to use if pos_filled() returns true, true = x, false = y
     {
         return (bbnode[0][row] & (1 << col));
     }
 
     auto num_legal_moves() const -> int_fast8_t {
-        return 7 - popcount(bbnode[0][0] | bbnode[1][0]);
+        return 4 - popcount(bbnode[0][0] | bbnode[1][0]);
     }
 
     auto legal_moves() const -> std::vector<Move> {
         std::vector<Move> moves;
-        moves.reserve(7);
-        int_fast8_t bb = ~(bbnode[0][0] | bbnode[1][0]) & 0b1111111;
+        moves.reserve(4);
+        int_fast8_t bb = ~(bbnode[0][0] | bbnode[1][0]) & 0b1111;
         for (; bb;) {
             moves.push_back(lsb(bb));
             bb &= bb - 1;  // clear the least significant bit set
@@ -89,9 +89,9 @@ class State {
         turn = -turn;
     }
 
-    void play(const Move col)  //WORKING
+    void play(Move col)  //WORKING
     {
-        for (int_fast8_t row = 6; row; row--) {
+        for (int_fast8_t row = 4; row; row--) {
             if (!pos_filled(row - 1, col)) {
                 if (turn == 1)
                     bbnode[0][row - 1] |= (1 << col);
@@ -108,7 +108,7 @@ class State {
     {
         Move col = movestack.back();
         movestack.pop_back();
-        for (int_fast8_t row = 0; row < 6; row++) {
+        for (int_fast8_t row = 0; row < 4; row++) {
             if (pos_filled(row, col)) {
                 if (turn == 1)
                     bbnode[1][row] &= ~(1 << col);
@@ -121,20 +121,19 @@ class State {
     }
 
     auto horizontal_term() const -> int_fast8_t {
-        for (int_fast8_t row = 0; row < 6; row++) {
-            for (int_fast8_t col = 0; col < 4; col++) {
-                if (pos_filled(row, col) &&
-                    pos_filled(row, col + 1) &&
-                    pos_filled(row, col + 2) &&
-                    pos_filled(row, col + 3)) {
-                    if (player_at(row, col) == player_at(row, col + 1) &&
-                        player_at(row, col + 1) == player_at(row, col + 2) &&
-                        player_at(row, col + 2) == player_at(row, col + 3)) {
-                        if (player_at(row, col))
-                            return 1;
-                        else
-                            return -1;
-                    }
+        for (int_fast8_t row = 0; row < 4; row++) {
+            const int_fast8_t col = 0;
+            if (pos_filled(row, col) &&
+                pos_filled(row, col + 1) &&
+                pos_filled(row, col + 2) &&
+                pos_filled(row, col + 3)) {
+                if (player_at(row, col) == player_at(row, col + 1) &&
+                    player_at(row, col + 1) == player_at(row, col + 2) &&
+                    player_at(row, col + 2) == player_at(row, col + 3)) {
+                    if (player_at(row, col))
+                        return 1;
+                    else
+                        return -1;
                 }
             }
         }
@@ -142,20 +141,19 @@ class State {
     }
 
     auto vertical_term() const -> int_fast8_t {
-        for (int_fast8_t row = 0; row < 3; row++) {
-            for (int_fast8_t col = 0; col < 7; col++) {
-                if (pos_filled(row, col) &&
-                    pos_filled(row + 1, col) &&
-                    pos_filled(row + 2, col) &&
-                    pos_filled(row + 3, col)) {
-                    if (player_at(row, col) == player_at(row + 1, col) &&
-                        player_at(row + 1, col) == player_at(row + 2, col) &&
-                        player_at(row + 2, col) == player_at(row + 3, col)) {
-                        if (player_at(row, col))
-                            return 1;
-                        else
-                            return -1;
-                    }
+        const int_fast8_t row = 0;
+        for (int_fast8_t col = 0; col < 4; col++) {
+            if (pos_filled(row, col) &&
+                pos_filled(row + 1, col) &&
+                pos_filled(row + 2, col) &&
+                pos_filled(row + 3, col)) {
+                if (player_at(row, col) == player_at(row + 1, col) &&
+                    player_at(row + 1, col) == player_at(row + 2, col) &&
+                    player_at(row + 2, col) == player_at(row + 3, col)) {
+                    if (player_at(row, col))
+                        return 1;
+                    else
+                        return -1;
                 }
             }
         }
@@ -163,42 +161,38 @@ class State {
     }
 
     auto diagup_term() const -> int_fast8_t {
-        for (int_fast8_t row = 3; row < 6; row++) {
-            for (int_fast8_t col = 0; col < 4; col++) {
-                if (pos_filled(row, col) &&
-                    pos_filled(row - 1, col + 1) &&
-                    pos_filled(row - 2, col + 2) &&
-                    pos_filled(row - 3, col + 3)) {
-                    if (player_at(row, col) == player_at(row - 1, col + 1) &&
-                        player_at(row - 1, col + 1) == player_at(row - 2, col + 2) &&
-                        player_at(row - 2, col + 2) == player_at(row - 3, col + 3)) {
-                        if (player_at(row, col))
-                            return 1;
-                        else
-                            return -1;
-                    }
-                }
+        const int_fast8_t row = 3;
+        const int_fast8_t col = 0;
+        if (pos_filled(row, col) &&
+            pos_filled(row - 1, col + 1) &&
+            pos_filled(row - 2, col + 2) &&
+            pos_filled(row - 3, col + 3)) {
+            if (player_at(row, col) == player_at(row - 1, col + 1) &&
+                player_at(row - 1, col + 1) == player_at(row - 2, col + 2) &&
+                player_at(row - 2, col + 2) == player_at(row - 3, col + 3)) {
+                if (player_at(row, col))
+                    return 1;
+                else
+                    return -1;
             }
         }
         return 0;
     }
 
     auto diagdown_term() const -> int_fast8_t {
-        for (int_fast8_t row = 0; row < 3; row++) {
-            for (int_fast8_t col = 0; col < 4; col++) {
-                if (pos_filled(row, col) &&
-                    pos_filled(row + 1, col + 1) &&
-                    pos_filled(row + 2, col + 2) &&
-                    pos_filled(row + 3, col + 3)) {
-                    if (player_at(row, col) == player_at(row + 1, col + 1) &&
-                        player_at(row + 1, col + 1) == player_at(row + 2, col + 2) &&
-                        player_at(row + 2, col + 2) == player_at(row + 3, col + 3)) {
-                        if (player_at(row, col))
-                            return 1;
-                        else
-                            return -1;
-                    }
-                }
+        const int_fast8_t row = 0;
+        const int_fast8_t col = 0;
+        if (pos_filled(row, col) &&
+            pos_filled(row + 1, col + 1) &&
+            pos_filled(row + 2, col + 2) &&
+            pos_filled(row + 3, col + 3)) {
+            if (player_at(row, col) == player_at(row + 1, col + 1) &&
+                player_at(row + 1, col + 1) == player_at(row + 2, col + 2) &&
+                player_at(row + 2, col + 2) == player_at(row + 3, col + 3)) {
+                if (player_at(row, col))
+                    return 1;
+                else
+                    return -1;
             }
         }
         return 0;
@@ -244,8 +238,8 @@ class State {
 
     auto heuristic_value() -> int_fast8_t {
         int_fast8_t val = 0;
-        for (int_fast8_t row = 0; row < 6; row++) {
-            for (int_fast8_t i = 0; i < 7; i++) {
+        for (int_fast8_t row = 0; row < 4; row++) {
+            for (int_fast8_t i = 0; i < 4; i++) {
                 val += pos_filled(row, i) * (player_at(row, i) ? 1 : -1) * weights[i];
             }
         }
