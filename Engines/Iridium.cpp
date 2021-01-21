@@ -1,4 +1,4 @@
-#pragma GCC optimize("Ofast", "unroll-loops", "omit-frame-pointer", "inline")
+#pragma GCC optimize("Ofast", "unroll-loops", "inline")
 #pragma GCC target("avx")
 
 #include <algorithm>
@@ -68,7 +68,7 @@ class TreeNode {
     }
 
     void expand() {
-        children.reserve(board.num_legal_moves());  // do this in the constructor, but only if you figure out how to make arrays work
+        children.reserve(board.num_legal_moves());
         for (const auto &move : board.legal_moves()) {
             board.play(move);
             children.push_back(new TreeNode(board));
@@ -271,14 +271,14 @@ class MCTS {
             // if (std::chrono::steady_clock::now() > breakunit) {
             //     std::cout << "The best move so far is: " << rootNode->best_child_as_move() + 1 << '\n';
             //     breakunit += std::chrono::milliseconds(500);
-            //     // rootNode->show_child_visitrates();
+            //     rootNode->show_child_visitrates();
             // }
         }
         State out = rootNode->best_child()->get_state();
-        std::cout << "ZERO:\n";
-        std::cout << nodes << " nodes processed.\n";
+        // std::cout << "ZERO:\n";
+        // std::cout << nodes << " nodes processed.\n";
         // std::cout << nodes << ", ";
-        std::cout << "Zero win prediction: " << (int)(rootNode->best_child()->get_winrate() * (100 / WIN_SCORE)) << "%\n";
+        // std::cout << "Zero win prediction: " << (int)(rootNode->best_child()->get_winrate() * (100 / WIN_SCORE)) << "%\n";
         int_fast8_t action, sboard, square, row, col;
         action = rootNode->best_child_as_move();
         // assert(action >= 0 && action <= 80);
@@ -324,6 +324,12 @@ class MCTS {
         State tempState = node->get_state();
         tempState.mem_setup();
         int_fast8_t boardStatus = tempState.evaluate();
+        // if (tempState.evaluate() != tempState.evaluateOLD()) {
+        //     tempState.show();
+        //     std::cout << (int)tempState.evaluate() << " " << (int)tempState.evaluateOLD() << "\n";
+        //     std::cout << tempState.position[0] << " " << tempState.position[1] << "\n";
+        // }
+        // assert(tempState.evaluate() == tempState.evaluateOLD());
         if (boardStatus == opponent) {
             node->get_parent()->set_win_score(INT_MIN);
             return boardStatus;
@@ -332,6 +338,13 @@ class MCTS {
             tempState.random_play();
         }
         boardStatus = tempState.evaluate();
+        // if (tempState.evaluate() != tempState.evaluateOLD()) {
+        //     tempState.show();
+        //     std::cout << (int)tempState.evaluate() << " " << (int)tempState.evaluateOLD() << "\n";
+        //     std::cout << tempState.position[0] << " " << tempState.position[1] << "\n";
+        // }
+        // assert(tempState.evaluate() == tempState.evaluateOLD());
+
         return boardStatus;
     }
 };
@@ -372,6 +385,7 @@ class Zero {
     }
 
     void show_result() const {
+        // assert(node.evaluate() == node.evaluateOLD());
         switch (node.evaluate()) {
             case 0:
                 std::cout << "1/2-1/2" << '\n';
@@ -596,7 +610,7 @@ inline void run_mcts_game(const long long TL) {
     glyph.show_result();
 }
 
-inline void selfplay(const long long TL) {
+inline auto selfplay(const long long TL) -> int {
     bool ans1, ans2;
     // std::cout << "Engine 1: Zero / Istus [0/1]: ";
     // std::cin >> ans1;
@@ -620,6 +634,7 @@ inline void selfplay(const long long TL) {
     }
     engine1.node.show();
     engine1.show_result();
+    return engine1.node.evaluate();
 }
 
 inline void userplay() {
@@ -647,6 +662,7 @@ inline void testsuite() {
                   << "\nstate of play (is game over?): "
                   << game.node.is_game_over()
                   << '\n';
+        // assert(game.node.evaluate() == game.node.evaluateOLD());
         assert(game.node.legal_moves().size() == game.node.num_legal_moves());
         game.node.random_play();
     }
@@ -674,6 +690,14 @@ inline void benchmark() {
 // }
 
 int main() {
+    int total;
+    for (int i = 0; i < 1000; i++)
+    {
+        total += selfplay(50);
+    }
+    std::cout << total;
+    return 0;
+
     std::cout << "Play against Zero [0] | Play against Istus [1] | Watch a self-play game [2] | Play with a friend [3] | Run tests [4] | Benchmark [5]\n--> ";
     int ans;
     std::cin >> ans;

@@ -11,7 +11,8 @@ auto string(std::vector<T> v) -> std::string {
     std::string builder;
     builder.append("{ ");
     for (auto &&i : v) {
-        builder.append(std::to_string(i));
+        // builder.append((std::to_string)(i));
+        builder += (char)(i);
         builder.append(", ");
     }
     builder.append("}");

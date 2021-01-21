@@ -7,7 +7,7 @@
 #include "accelerations.hpp"
 
 namespace Board {
-using Move = int_fast16_t;
+using Move = int_fast8_t;
 using Bitboard = int_fast16_t;
 using Num = int_fast8_t;
 class SubState {
@@ -227,9 +227,9 @@ class State {
         return metaposition[board].is_board_dead();
     }
 
-    inline auto winner_of_board(const Num board) const -> bool  //only valid to use if pos_filled() returns true, true = x, false = y
+    inline auto winner_of_board(const Num board) const -> int_fast8_t  //only valid to use if pos_filled() returns true, true = x, false = y
     {
-        return metaposition[board].evaluate() == 1;
+        return metaposition[board].evaluate();
     }
 
     inline auto is_full() -> bool {
@@ -238,59 +238,43 @@ class State {
 
     inline auto evaluate() const -> Num {
         // check first diagonal
-        if (board_over(0) && board_over(4) && board_over(8)) {
-            if (winner_of_board(0) == winner_of_board(4) && winner_of_board(4) == winner_of_board(8)) {
-                if (winner_of_board(0))
-                    return 1;
-                else
-                    return -1;
+        Num middle = winner_of_board(4);
+        if (middle) {
+            if (winner_of_board(0) == middle && middle == winner_of_board(8)) {
+                return middle;
+            }
+            if (winner_of_board(2) == middle && middle == winner_of_board(6)) {
+                return middle;
             }
         }
+
         // check second diagonal
-        if (board_over(2) && board_over(4) && board_over(6)) {
-            if (winner_of_board(2) == winner_of_board(4) && winner_of_board(4) == winner_of_board(6)) {
-                if (winner_of_board(2))
-                    return 1;
-                else
-                    return -1;
-            }
-        }
+
         // check rows
         for (Num i = 0; i < 3; i++) {
-            if (board_over(i * 3) && board_over(i * 3 + 1) && board_over(i * 3 + 2)) {
+            if (winner_of_board(i * 3)) {
                 if (winner_of_board(i * 3) == winner_of_board(i * 3 + 1) && winner_of_board(i * 3 + 1) == winner_of_board(i * 3 + 2)) {
-                    if (winner_of_board(i * 3))
-                        return 1;
-                    else
-                        return -1;
+                    return winner_of_board(i * 3);
                 }
             }
         }
         // check columns
         for (Num i = 0; i < 3; i++) {
-            if (board_over(i) && board_over(i + 3) && board_over(i + 6)) {
+            if (winner_of_board(i)) {
                 if (winner_of_board(i) == winner_of_board(i + 3) && winner_of_board(i + 3) == winner_of_board(i + 6)) {
-                    if (winner_of_board(i))
-                        return 1;
-                    else
-                        return -1;
+                    return winner_of_board(i);
                 }
             }
         }
-        Num xwon = 0;
-        Num owon = 0;
+        Num count = 0;
         for (Num i = 0; i < 9; i++) {
             if (board_over(i)) {
-                if (winner_of_board(i)) {
-                    xwon++;
-                } else {
-                    owon++;
-                }
+                count += winner_of_board(i);
             } else {
                 return 0;
             }
         }
-        if (xwon > owon) {
+        if (count > 0) {
             return 1;
         } else {
             return -1;
@@ -311,12 +295,21 @@ class State {
         for (Num x = 0; x < 3; x++) {
             for (Num y = 0; y < 3; y++) {
                 if (board_over(x * 3 + y)) {
-                    if (winner_of_board(x * 3 + y))
-                        std::cout << "X ";
-                    else
-                        std::cout << "0 ";
-                } else
+                    switch (winner_of_board(x * 3 + y)) {
+                        case 1:
+                            std::cout << "X ";
+                            break;
+
+                        case -1:
+                            std::cout << "0 ";
+                            break;
+
+                        default:
+                            break;
+                    }
+                } else {
                     std::cout << ". ";
+                }
             }
             std::cout << "\n";
         }
@@ -363,7 +356,7 @@ class State {
             for (const auto &board : metaposition) {
                 if (!board.is_board_dead()) {
                     int_fast16_t bb = ~board.union_bb() & 0b111111111;
-                    for (; bb;) {
+                    while (bb) {
                         moves.push_back(bcounter * 9 + (lsb(bb)));
                         bb &= bb - 1;  // clear the least significant bit set
                     }
@@ -373,7 +366,7 @@ class State {
         } else {
             moves.reserve(9);
             Bitboard bb = ~metaposition[forcingBoard].union_bb() & 0b111111111;
-            for (; bb;) {
+            while (bb) {
                 moves.push_back(forcingBoard * 9 + (lsb(bb)));
                 bb &= bb - 1;  // clear the least significant bit set
             }

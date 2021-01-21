@@ -67,7 +67,45 @@ class State {
         return true;
     }
 
-    auto evaluate() const -> int_fast8_t {
+    inline auto evaluatex() const -> int_fast8_t {
+        const Bitboard x = position[0];
+        const Bitboard o = position[1];
+        if ((x & 0b111000000) == 0b111000000)  // highrow
+            return 1;
+        if ((x & 0b000111000) == 0b000111000)  // midrow
+            return 1;
+        if ((x & 0b000000111) == 0b000000111)  // lowrow
+            return 1;
+        if ((x & 0b100010001) == 0b100010001)  // diaglrdown
+            return 1;
+        if ((x & 0b001010100) == 0b001010100)  // diaglrup
+            return 1;
+        if ((x & 0b100100100) == 0b100100100)  // lcol
+            return 1;
+        if ((x & 0b010010010) == 0b010010010)  // mcol
+            return 1;
+        if ((x & 0b001001001) == 0b001001001)  // rcol
+            return 1;
+        if ((o & 0b111000000) == 0b111000000)  // highrow
+            return -1;
+        if ((o & 0b000111000) == 0b000111000)  // midrow
+            return -1;
+        if ((o & 0b000000111) == 0b000000111)  // lowrow
+            return -1;
+        if ((o & 0b100010001) == 0b100010001)  // diaglrdown
+            return -1;
+        if ((o & 0b001010100) == 0b001010100)  // diaglrup
+            return -1;
+        if ((o & 0b100100100) == 0b100100100)  // lcol
+            return -1;
+        if ((o & 0b010010010) == 0b010010010)  // mcol
+            return -1;
+        if ((o & 0b001001001) == 0b001001001)  // rcol
+            return -1;
+        return 0;
+    }
+
+    inline auto evaluate() const -> int_fast8_t {
         // check first diagonal
         if (pos_filled(0) && pos_filled(4) && pos_filled(8)) {
             if (player_at(0) == player_at(4) && player_at(4) == player_at(8)) {
