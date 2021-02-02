@@ -1,25 +1,23 @@
-#include <iostream> // for IO
-#include <cstdlib>  // for RNG
-#include <ctime>    // used to get date and time information
+#include <cstdlib>   // for RNG
+#include <ctime>     // used to get date and time information
+#include <iostream>  // for IO
 
-auto roll_dice() -> int // return a random int from 1 -> 6
+auto roll_dice() -> int  // return a random int from 1 -> 6
 {
-    int roll = 0;          // declare a variable to keep store the random number
-    roll = rand() % 6 + 1; // generate a random number between 1 and 6
+    int roll = 0;           // declare a variable to keep store the random number
+    roll = rand() % 6 + 1;  // generate a random number between 1 and 6
     return roll;
 }
 
 uint64_t x = 0, w = 0, s = 0xb5ad4eceda1ce2a9;
 
-inline static uint32_t msws()
-{
+inline static uint32_t msws() {
     x *= x;
     x += (w += s);
     return x = (x >> 32) | (x << 32);
 }
 
-auto main() -> int
-{
+auto main() -> int {
     // srand(time(0));      // initialise random num generator using time
     // int currentRoll = 0; // init storage for the function output
     // int iterations = 0;  // tally of dice rolled
@@ -47,8 +45,7 @@ auto main() -> int
     //     std::cout << "Would you like to run again? [positive to continue, 0 to exit]: ";
     //     std::cin >> rerun; // get from user
     // } while (rerun > 0);   // exit if user gives 0
-    for (int i = 0; i < 10; i++)
-    {
-        std::cout << msws()%10 << '\n';
-    }    
+    for (int i = 0; i < 10; i++) {
+        std::cout << msws() % 10 << '\n';
+    }
 }

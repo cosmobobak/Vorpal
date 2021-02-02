@@ -1,11 +1,10 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <vector>
 using namespace std;
 
-int main()
-{
+int main() {
     // Create a text file
     ofstream MyWriteFile("filename.txt");
 
@@ -28,8 +27,7 @@ int main()
     ifstream MyReadFile("filename.txt");
 
     // Use a while loop together with the getline() function to read the file line by line
-    while (getline(MyReadFile, myText))
-    {
+    while (getline(MyReadFile, myText)) {
         // Output the text from the file
         cout << myText;
     }

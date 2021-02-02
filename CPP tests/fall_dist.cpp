@@ -7,14 +7,15 @@
 #include <TM16XXFonts.h>
 //for rtc
 #include <DS3231.h>
-#include <Streaming.h>
 #include <SPI.h>
+#include <Streaming.h>
 #include <Wire.h>
 //for oled
 //#include <Streaming.h>
-#include <iomanip>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+
+#include <iomanip>
 //7segDefs
 #define TM1638_STB D5
 #define TM1638_CLK D6
@@ -33,79 +34,70 @@ bool h12;
 bool PM;
 RifTime t;
 char buffer[24];
-int raiseP(int base, int expo)
-{
+int raiseP(int base, int expo) {
     int acc = 1;
-    for (int i = 0; i < expo; i++)
-    {
+    for (int i = 0; i < expo; i++) {
         acc *= base;
     }
     return acc;
 }
 
-int char_to_int(char *c)
-{
-    switch (*c)
-    {
-    case '0':
-        return 0;
-        break;
-    case '1':
-        return 1;
-        break;
-    case '2':
-        return 2;
-        break;
-    case '3':
-        return 3;
-        break;
-    case '4':
-        return 4;
-        break;
-    case '5':
-        return 5;
-        break;
-    case '6':
-        return 6;
-        break;
-    case '7':
-        return 7;
-        break;
-    case '8':
-        return 8;
-        break;
-    case '9':
-        return 9;
-        break;
+int char_to_int(char *c) {
+    switch (*c) {
+        case '0':
+            return 0;
+            break;
+        case '1':
+            return 1;
+            break;
+        case '2':
+            return 2;
+            break;
+        case '3':
+            return 3;
+            break;
+        case '4':
+            return 4;
+            break;
+        case '5':
+            return 5;
+            break;
+        case '6':
+            return 6;
+            break;
+        case '7':
+            return 7;
+            break;
+        case '8':
+            return 8;
+            break;
+        case '9':
+            return 9;
+            break;
 
-    default:
-        return 0;
-        break;
+        default:
+            return 0;
+            break;
     }
 }
 
-int timehandler_nd(char *displayedTime)
-{
+int timehandler_nd(char *displayedTime) {
     int arr[6];
     int counter = 0;
-    for (int i = 0; i < 8; i++)
-    {
-        if (i != 2 && i != 5)
-        {
+    for (int i = 0; i < 8; i++) {
+        if (i != 2 && i != 5) {
             arr[counter] = char_to_int(displayedTime + i);
             counter++;
         }
     }
     int total = 0;
-    for (int i = 0; i < 6; i++)
-    {
+    for (int i = 0; i < 6; i++) {
         total += arr[5 - i] * raiseP(10, i);
     }
     return total;
 }
 
-void show_clock(int t)
-{
+void show_clock(int t) {
     int h = t / 10000;
     int m = (t - h) / 100;
     int s = t - m - h;
@@ -116,8 +108,7 @@ void show_clock(int t)
     double hourY = 16 * cos(hAngle);
 }
 
-void setup()
-{
+void setup() {
     // set up the 7-segement display
     module.clearDisplay();
     module.setupDisplay(true, 2);
@@ -136,11 +127,10 @@ void setup()
     delay(2000);
     display.clearDisplay();
     display.setCursor(0, 0);
-    display.setTextSize(1); // - a line is 21 chars in this size
+    display.setTextSize(1);  // - a line is 21 chars in this size
     display.setTextColor(WHITE);
 }
-void loop()
-{
+void loop() {
     rtc.getTime(t);
     Serial << rtc.toString(buffer) << endl;
     Serial << rtc.getTemperature() << " C" << endl;
@@ -162,8 +152,7 @@ void loop()
     display.display();
     delay(5000);
     module.setDisplayToDecNumber(timehandler_nd(displayedTime), 0, false);
-    for (int i = 0x0001; i < 0x0100; i = i * 2)
-    {
+    for (int i = 0x0001; i < 0x0100; i = i * 2) {
         module.setLEDs(i);
         delay(100);
     }

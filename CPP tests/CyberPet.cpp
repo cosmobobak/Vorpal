@@ -1,8 +1,7 @@
 #include <iostream>
 #include <string>
 
-enum hungerLevels
-{
+enum hungerLevels {
     wellFed,
     slightlyPeckish,
     ratherHungery,
@@ -10,8 +9,7 @@ enum hungerLevels
     dead
 };
 
-enum tiredLevels
-{
+enum tiredLevels {
     wideAwake,
     awake,
     tired,
@@ -33,56 +31,46 @@ std::string tiredLevels[] = {
     "fallingAsleep",
     "collapsed"};
 
-class CyberPet
-{
-public:
+class CyberPet {
+   public:
     int hunger = wellFed;
     int tiredness = wideAwake;
     std::string name = "your pet";
 
-    CyberPet()
-    {
+    CyberPet() {
         bool ans;
         std::cout << "would you like to name your pet? [1/0]\n--> ";
         std::cin >> ans;
-        if (ans)
-        {
+        if (ans) {
             std::cout << "enter your pet's name:\n--> ";
             std::cin >> name;
         }
     }
 
-    void feed()
-    {
+    void feed() {
         hunger -= 1;
-        if (hunger < 0)
-        {
+        if (hunger < 0) {
             hunger = 0;
         }
     }
 
-    void sleep()
-    {
+    void sleep() {
         tiredness -= 1;
-        if (tiredness < 0)
-        {
+        if (tiredness < 0) {
             tiredness = 0;
         }
     }
 
-    auto happiness_level() -> int
-    {
+    auto happiness_level() -> int {
         return 8 - hunger - tiredness;
     }
 
-    void show_state()
-    {
+    void show_state() {
         std::cout << name << "'s current hunger is " << hungerLevels[hunger] << '\n';
         std::cout << name << "'s current tiredness is " << tiredLevels[tiredness] << '\n';
     }
 
-    auto is_dead() -> bool
-    {
+    auto is_dead() -> bool {
         int numFives = 0;
         numFives += hunger == 5 ? 1 : 0;
         numFives += tiredness == 5 ? 1 : 0;
@@ -91,28 +79,25 @@ public:
     }
 };
 
-auto main() -> int
-{
+auto main() -> int {
     CyberPet pet;
     pet.show_state();
     int action = 0;
-    while (action != 1)
-    {
+    while (action != 1) {
         std::cout << "choose [1] Quit, [2] Feed, [3] Give a Nap, [4] Display Current State.\n--> ";
         std::cin >> action;
-        switch (action)
-        {
-        case 2:
-            pet.feed();
-            break;
-        case 3:
-            pet.sleep();
-            break;
-        case 4:
-            pet.show_state();
-            break;
-        default:
-            break;
+        switch (action) {
+            case 2:
+                pet.feed();
+                break;
+            case 3:
+                pet.sleep();
+                break;
+            case 4:
+                pet.show_state();
+                break;
+            default:
+                break;
         }
     }
 

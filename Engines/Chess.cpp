@@ -57,6 +57,7 @@
 #include <algorithm>
 #include <bitset>
 #include <numeric>
+#include <optional>
 #include <variant>
 #include <regex>
 #include "pregenerated_chess_tables.hpp"
@@ -623,13 +624,13 @@ const std::vector<int> v1 = {-9, -7, 7, 9};
 const std::vector<int> v2 = {-8, 8};
 const std::vector<int> v3 = {-1, 1};
 
-constexpr auto diag = _attack_table(v1);
-constexpr auto file = _attack_table(v2);
-constexpr auto rank = _attack_table(v3);
+// constexpr auto diag = _attack_table(v1);
+// constexpr auto file = _attack_table(v2);
+// constexpr auto rank = _attack_table(v3);
 
-auto [BB_DIAG_MASKS, BB_DIAG_ATTACKS];
-auto [BB_FILE_MASKS, BB_FILE_ATTACKS];
-auto [BB_RANK_MASKS, BB_RANK_ATTACKS];
+// auto [BB_DIAG_MASKS, BB_DIAG_ATTACKS];
+// auto [BB_FILE_MASKS, BB_FILE_ATTACKS];
+// auto [BB_RANK_MASKS, BB_RANK_ATTACKS];
 
 auto _rays() -> std::vector<std::vector<Bitboard>>
 {
@@ -873,7 +874,7 @@ public:
         // """
         if (uci == "0000")
             return null();
-        else if (uci.length() == 4 and '@' == uci[1])
+        else if (uci.length() == 4 && '@' == uci[1])
         {
             std::optional<PieceType> _drop = (PieceType)get_index(PIECE_SYMBOLS, (char)tolower(uci[0]));
             Square s = get_index(SQUARE_NAMES, uci.substr(2));
@@ -1712,7 +1713,7 @@ public:
             rays = attacks[kingc.value()][0];
             if (rays & square_mask)
             {
-                snipers = rays & sliders & occupied_co[not color];
+                snipers = rays & sliders & occupied_co[!color];
                 for (int sniper : scan_reversed(snipers)){
                     if (between(sniper, kingc.value()) & (occupied | square_mask) == square_mask)
                         return ray(kingc.value(), sniper);}
@@ -2372,7 +2373,7 @@ public:
 
         turn = board.turn;
         castling_rights = board.castling_rights;
-        ep_square = board.ep_square;
+        ep_square = board.ep_square.value();
         halfmove_clock = board.halfmove_clock;
         fullmove_number = board.fullmove_number;
     }
@@ -2430,8 +2431,8 @@ public:
 
     std::optional<std::string> tbw_suffix = ".rtbw";
     std::optional<std::string> tbz_suffix = ".rtbz";
-    std::optional<std::string> tbw_magic = b "\x71\xe8\x23\x5d";
-    std::optional<std::string> tbz_magic = b "\xd7\x66\x0c\xa5";
+    std::optional<std::string> tbw_magic = "\x71\xe8\x23\x5d";
+    std::optional<std::string> tbz_magic = "\xd7\x66\x0c\xa5";
     std::optional<std::string> pawnless_tbw_suffix = std::nullopt;
     std::optional<std::string> pawnless_tbz_suffix = std::nullopt;
     std::optional<std::string> pawnless_tbw_magic = std::nullopt;
@@ -2561,8 +2562,8 @@ public:
         // :func:`~chess.Board.reset()` to fully restore the starting position
         // (including turn, castling rights, etc.).
         // """
-        BaseBoard::reset_board()
-        clear_stack()
+        BaseBoard::reset_board();
+        clear_stack();
     }
     void clear(){
         // """
