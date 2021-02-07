@@ -1,17 +1,16 @@
-#include <iostream>
 #include <algorithm>
-#include <string>
 #include <bit>
 #include <cstdint>
 #include <initializer_list>
+#include <iostream>
+#include <string>
 
-#include "vorpal_node.hpp" //daisy-chaining
+#include "vorpal_node.hpp"  //daisy-chaining
 
 using namespace vorpal_node;
 
-class Vorpal
-{
-public:
+class Vorpal {
+   public:
     int nodes = 0;
     Board node = Board();
     //int tableSize = SOME PRIME NUMBER;
@@ -49,21 +48,18 @@ public:
         {20, 30, 10, 0, 0, 10, 30, 20, 20, 20, 0, 0, 0, 0, 20, 20, -10, -20, -20, -20, -20, -20, -20, -10, -20, -30, -30, -40, -40, -30, -30, -20, -30, -40, -40, -50, -50, -40, -40, -30, -30, -40, -40, -50, -50, -40, -40, -30, -30, -40, -40, -50, -50, -40, -40, -30, -30, -40, -40, -50, -50, -40, -40, -30},
     };
 
-    Vorpal()
-    {
+    Vorpal() {
         int testVar = 0;
     }
 
-    auto legal_moves() -> std::vector<vorpal_move::Move>
-    {
+    auto legal_moves() -> std::vector<vorpal_move::Move> {
         return node.legal_moves();
     }
 
-    auto evaluate(int depth) -> int
-    {
-        nodes++;            //increment nodes evaluated
-        int m = node.mod(); //get modifier for turn, either -1 or 1
-        int rating = 0;     //init rating
+    auto evaluate(int depth) -> int {
+        nodes++;             //increment nodes evaluated
+        int m = node.mod();  //get modifier for turn, either -1 or 1
+        int rating = 0;      //init rating
 
         //if (node.is_checkmate()) //if checkmate, multiply by the depth to incentivise quicker mating
         //{
@@ -89,41 +85,31 @@ public:
         return rating;
     }
 
-    auto negamax(int depth, int color, int a = -200000, int b = 200000) -> int
-    {
-        if (node.is_game_over() || depth < 1)
-        {
+    auto negamax(int depth, int color, int a = -200000, int b = 200000) -> int {
+        if (node.is_game_over() || depth < 1) {
             return evaluate(depth) * color;
         }
         int score;
-        for (auto &&i : node.legal_moves())
-        {
+        for (auto &&i : node.legal_moves()) {
             node.push(i);
             score = -negamax(depth - 1, -color, -b, -a);
             node.pop();
 
-            if (b >= score)
-            {
+            if (b >= score) {
                 return b;
             }
-            if (a < score)
-            {
+            if (a < score) {
                 a = score;
             }
         }
         return a;
     }
 
-    void perftx(int n)
-    {
-        if (n <= 0)
-        {
+    void perftx(int n) {
+        if (n <= 0) {
             nodes++;
-        }
-        else
-        {
-            for (vorpal_move::Move move : node.legal_moves())
-            {
+        } else {
+            for (vorpal_move::Move move : node.legal_moves()) {
                 node.push(move);
                 perftx(n - 1);
                 node.pop();
@@ -131,24 +117,20 @@ public:
         }
     }
 
-    auto perft(int n) -> int
-    {
+    auto perft(int n) -> int {
         nodes = 0;
         perftx(n);
         return nodes;
     }
 
-    void autoperft()
-    {
-        for (int i = 0; i < 6; i++)
-        {
+    void autoperft() {
+        for (int i = 0; i < 6; i++) {
             std::cout << perft(i) << '\n';
         }
     }
 };
 
-auto main() -> int
-{
+auto main() -> int {
     //std::vector<vorpal_move::Move> ref;
 
     Vorpal engine;
