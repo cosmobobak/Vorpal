@@ -32,7 +32,7 @@ namespace vorpal_move
             color(color), 
             cPiece(cPiece), 
             cColor(!color), 
-            iscapture((cPiece == 12) ? false : true)
+            iscapture(!(cPiece == 12))
         {}
     };
 }; // namespace vorpal_move

@@ -188,7 +188,7 @@ int main()
     Stack stack;
     stack.show();
     int col;
-    while (stack.is_game_over() == false)
+    while (!stack.is_game_over())
     {
         stack.engine_move();
         stack.show();
