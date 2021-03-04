@@ -16,7 +16,7 @@
 #define S16 signed __int16
 #define S8 signed __int8
 
-auto square_notation(int index) -> std::string {
+auto square_notation(Square index) -> std::string {
     // 0 => A8
     // 63 => H1
     char letters[8] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'};
@@ -30,56 +30,7 @@ auto square_notation(int index) -> std::string {
     return {first, second};
 }
 
-char pieces[13] = {'p', 'n', 'b', 'r', 'q', 'k', 'P', 'N', 'B', 'R', 'Q', 'K', '.'};
-std::string pieceNames[13] = {
-    "blackPawn",
-    "blackKnight",
-    "blackBishop",
-    "blackRook",
-    "blackQueen",
-    "blackKing",
-    "whitePawn",
-    "whiteKnight",
-    "whiteBishop",
-    "whiteRook",
-    "whiteQueen",
-    "whiteKing",
-    "emptySquare"};
-
-enum e_dirs {
-    SOUTH_EAST,
-    SOUTH,
-    SOUTH_WEST,
-    EAST,
-    NORTH_WEST,
-    NORTH,
-    NORTH_EAST,
-    WEST
-};
-
-enum e_color {
-    WHITE,
-    BLACK,
-    NO_COLOR
-};
-
-struct s_searchTracker {
-    bool myside;
-    U8 depth;
-    int history[128][128];
-    vorpal_move::Move killers[1024][2];
-    U64 nodes;
-    S32 movetime;
-    U64 q_nodes;
-    unsigned long starttime;
-};
-
 //FUNCTIONS AND OVERLOADS
-
-std::ostream &operator<<(std::ostream &os, const vorpal_move::Move &obj) {
-    os << "Move " << pieceNames[obj.piece + obj.color * 6] << " C:" << obj.color << " " << square_notation(obj.from_square) << "->" << square_notation(obj.to_square) << " C?:" << obj.iscapture << " CP:" << obj.cPiece << " CC:" << obj.cColor;
-    return os;
-}
 
 auto square_from_an(std::string an_square) -> int {
     int a = 7 - (an_square[0] - 97);

@@ -3,13 +3,13 @@
 #include "names.hpp"
 
 // A bitscan forward is used to find the index of the least significant 1 bit (LS1B).
-auto bitscan_forward(U64 bb) -> int {
-    return __builtin_ctzll(bb);
+auto bitscan_forward(U64 bb) -> Square {
+    return (Square)__builtin_ctzll(bb);
 }
 
 // A bitscan reverse is used to find the index of the most significant 1 bit (MS1B).
-auto bitscan_reverse(U64 bb) -> int {
-    return __builtin_clzll(bb);
+auto bitscan_reverse(U64 bb) -> Square {
+    return (Square)__builtin_clzll(bb);
 }
 
 // note: ctz vs clz builtins in the above functions

@@ -13,7 +13,6 @@
 int main(int argc, char const *argv[])
 {
     MaskSet masks = MaskSet();
-    State board = State(&masks);
     std::cout << "Vorpal running...";
     return 0;
 }
