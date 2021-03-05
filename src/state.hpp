@@ -21,7 +21,9 @@ class State {
     int halfmove_clock;  // resets on captures and pawn moves
     std::vector<Move> move_stack;
 
-    State() {
+    U64** raymasks;
+
+    State(U64** rm) {
         occupied = BB_RANK_2 | BB_RANK_7 | BB_BACKRANKS;
         occupied_co[WHITE] = BB_RANK_1 | BB_RANK_2;
         occupied_co[BLACK] = BB_RANK_7 | BB_RANK_8;
@@ -35,6 +37,7 @@ class State {
         ep_square = BB_EMPTY;
         castling_rights = BB_CORNERS;
         movecount = 0;
+        raymasks = rm;
     }
 
     /////////////////////////////////////////////////////////////
@@ -65,8 +68,10 @@ class State {
     }
 
     /////////////////////////////////////////////////////////////
-    /////////////////////////// CHECK ///////////////////////////
+    ///////////////////////// PREDICATES ////////////////////////
     /////////////////////////////////////////////////////////////
+
+    /////////////////////////// CHECK ///////////////////////////
 
     auto is_check() const -> bool {
         // find our king
@@ -75,13 +80,26 @@ class State {
         // bitmask of the opponent's pieces
         U64 theirPieces = occupied_co[!turn] & occupied;
 
+        // ideally we can just reverse pawn attack generation (note "turn" is not negated)
+        bool pawnCheck = BB_PAWN_ATTACKS[turn][ourKingLocation] & (theirPieces & pieces[PAWN]);
+
         // if our king can attack one of their knights, like a knight,
         // then we are in check from that knight.
         bool knightCheck = BB_KNIGHT_ATTACKS[ourKingLocation] & (theirPieces & pieces[KNIGHT]);
 
-        
-        bool pawnCheck = BB_PAWN_ATTACKS[turn][ourKingLocation] & (theirPieces & pieces[PAWN]);
+        // generate bitmasks for the diagonal attacks from the king
+        U64 diaglines = get_bishop_moves_c(ourKingLocation, occupied, raymasks);
+        // generate bitmasks for the rank & file attacks from the king
+        U64 straightlines = get_rook_moves_c(ourKingLocation, occupied, raymasks);
+
+        bool bishopCheck = diaglines & (theirPieces & pieces[BISHOP]);
+        bool rookCheck = straightlines & (theirPieces & pieces[ROOK]);
+        bool queenCheck = (diaglines | straightlines) & (theirPieces & pieces[QUEEN]);
+
+        return pawnCheck || knightCheck || bishopCheck || rookCheck || queenCheck;
     }
+
+    ///////////////////////// MATERIAL //////////////////////////
 
     auto is_insufficient_material() const -> bool {
         // for a draw by insufficient_material, there must be no pawns, rooks, or queens
@@ -98,8 +116,20 @@ class State {
 
         return baseRequirement && (knightDraw || lightBishopDraw || darkBishopDraw);
     }
+
+    ////////////////////////// CHECKMATE ////////////////////////
+
+    auto is_checkmate() const -> bool {
+        return is_check() && num_legal_moves() == 0;
+    }
+
+    /////////////////////////// SIMPLE //////////////////////////
+
+    auto is_threefold() const -> bool {
+        return false;  // TODO
+    }
     auto is_stalemate() const -> bool {
-        return legal_moves().size() == 0 && !is_check();
+        return num_legal_moves() == 0 && !is_check();
     }
     auto is_fifty_moves() const -> bool {
         return halfmove_clock >= 50;
@@ -111,15 +141,229 @@ class State {
         return is_checkmate() || is_draw();
     }
 
-    auto legal_moves() -> std::vector<Move> {
+    /////////////////////////////////////////////////////////////
+    ////////////////////// MOVE GENERATION //////////////////////
+    /////////////////////////////////////////////////////////////
+
+    auto num_legal_moves() const -> int {
+        return 0;
+    }
+
+    void add_pawn_pushes(std::vector<Move>& movevec) {
         U64 our_pieces = occupied_co[turn];
+        U64 our_pawns = our_pieces & pieces[PAWN];
+        // the square that a move originates from
+        uint_fast8_t from_square;
+        // the square that a move targets
+        uint_fast8_t to_square;
+        // the opponent's pieces
+        U64 targets;
+        // generate pawn pushes
+        while (our_pawns) {
+            // find the current moved piece
+            from_square = bitscan_forward(our_pawns);
+            // find the intersection of legal pawn pushes and empty squares
+            targets = ~occupied & BB_PAWN_FORWARD[turn][from_square];
+            while (targets) {
+                // find a target square
+                to_square = bitscan_forward(targets);
+                if ((1ULL << to_square) & BB_BACKRANKS) {
+                    // emplace_back constructs a move in the vector
+                    movevec.emplace_back(
+                        from_square,
+                        to_square,
+                        KNIGHT_PROMOTION_FLAG);
+                    movevec.emplace_back(
+                        from_square,
+                        to_square,
+                        BISHOP_PROMOTION_FLAG);
+                    movevec.emplace_back(
+                        from_square,
+                        to_square,
+                        ROOK_PROMOTION_FLAG);
+                    movevec.emplace_back(
+                        from_square,
+                        to_square,
+                        QUEEN_PROMOTION_FLAG);
+                } else {
+                    // double pawn push from second rank to middle rank else normal
+                    if ((1ULL << from_square) & BB_SECOND_RANKS && (1ULL << to_square) & BB_MIDDLE_RANKS) {
+                        movevec.emplace_back(
+                            from_square,
+                            to_square,
+                            PAWN_DOUBLE_PUSH_FLAG);
+                    } else {
+                        movevec.emplace_back(
+                            from_square,
+                            to_square,
+                            QUIET_MOVE_FLAG);
+                    }
+                }
+                // clear the target push square for next run
+                targets &= targets - 1;
+            }
+            // clear the pawn from_square for next run
+            our_pawns &= our_pawns - 1;
+        }
+    }
+
+    void add_pawn_captures(std::vector<Move>& movevec) {
+        U64 our_pieces = occupied_co[turn];
+        U64 our_pawns = our_pieces & pieces[PAWN];
+        // the square that a move originates from
+        uint_fast8_t from_square;
+        // the square that a move targets
+        uint_fast8_t to_square;
+        // the opponent's pieces
+        U64 targets;
+        // generate pawn captures
+        while (our_pawns) {
+            // find the current moved piece
+            from_square = bitscan_forward(our_pawns);
+            // find the intersection of legal pawn attacks and the opponent's pieces
+            targets = (occupied_co[!turn] | ep_square) & BB_PAWN_ATTACKS[turn][from_square];
+            while (targets) {
+                // find a target square
+                to_square = bitscan_forward(targets);
+                if ((1ULL << to_square) & BB_BACKRANKS) {
+                    // emplace_back constructs a move in the vector
+                    movevec.emplace_back(
+                        from_square,
+                        to_square,
+                        KNIGHT_PROMOTION_FLAG | CAPTURE_FLAG);
+                    movevec.emplace_back(
+                        from_square,
+                        to_square,
+                        BISHOP_PROMOTION_FLAG | CAPTURE_FLAG);
+                    movevec.emplace_back(
+                        from_square,
+                        to_square,
+                        ROOK_PROMOTION_FLAG | CAPTURE_FLAG);
+                    movevec.emplace_back(
+                        from_square,
+                        to_square,
+                        QUEEN_PROMOTION_FLAG | CAPTURE_FLAG);
+                } else {
+                    // test for en passant
+                    if ((1ULL << to_square) & ep_square) {
+                        movevec.emplace_back(
+                            from_square,
+                            to_square,
+                            EP_FLAG);
+                    } else {
+                        movevec.emplace_back(
+                            from_square,
+                            to_square,
+                            CAPTURE_FLAG);
+                    }
+                }
+                // clear the target push square for next run
+                targets &= targets - 1;
+            }
+            // clear the pawn from_square for next run
+            our_pawns &= our_pawns - 1;
+        }
+    }
+
+    void add_knight_moves(std::vector<Move>& movevec) {
+        U64 our_pieces = occupied_co[turn];
+        U64 our_knights = our_pieces & pieces[KNIGHT];
+        // the square that a move originates from
+        uint_fast8_t from_square;
+        // the square that a move targets
+        uint_fast8_t to_square;
+        // the opponent's pieces
+        U64 capture_targets;
+        // empty slots
+        U64 quiet_targets;
+        // generate knight moves
+        while (our_knights) {
+            // find the current moved piece
+            from_square = bitscan_forward(our_knights);
+            // find the intersection of knight attacks and the opponent's pieces
+            capture_targets = occupied_co[!turn] & BB_KNIGHT_ATTACKS[from_square];
+            while (capture_targets) {
+                // find a target square
+                to_square = bitscan_forward(capture_targets);
+                // add move to moves
+                movevec.emplace_back(
+                    from_square,
+                    to_square,
+                    CAPTURE_FLAG);
+                // clear the target push square for next run
+                capture_targets &= capture_targets - 1;
+            }
+            // find the intersection of knight attacks and the empty spaces
+            quiet_targets = ~occupied & BB_KNIGHT_ATTACKS[from_square];
+            while (quiet_targets) {
+                // find a target square
+                to_square = bitscan_forward(quiet_targets);
+                // add move to moves
+                movevec.emplace_back(
+                    from_square,
+                    to_square,
+                    QUIET_MOVE_FLAG);
+                // clear the target push square for next run
+                quiet_targets &= quiet_targets - 1;
+            }
+            // clear the pawn from_square for next run
+            our_knights &= our_knights - 1;
+        }
+    }
+
+    void add_king_moves(std::vector<Move>& movevec) {
+        U64 our_pieces = occupied_co[turn];
+        // the square that a move originates from (there's only one king)
+        uint_fast8_t from_square = bitscan_forward(our_pieces & pieces[KING]);
+        // the square that a move targets
+        uint_fast8_t to_square;
+        // the opponent's pieces
+        U64 capture_targets;
+        // empty slots
+        U64 quiet_targets;
+        // generate king moves
+        // find the intersection of king attacks and the opponent's pieces
+        capture_targets = occupied_co[!turn] & BB_KING_ATTACKS[from_square];
+        while (capture_targets) {
+            // find a target square
+            to_square = bitscan_forward(capture_targets);
+            // add move to moves
+            movevec.emplace_back(
+                from_square,
+                to_square,
+                CAPTURE_FLAG);
+            // clear the target push square for next run
+            capture_targets &= capture_targets - 1;
+        }
+        // find the intersection of king attacks and the empty spaces
+        quiet_targets = ~occupied & BB_KING_ATTACKS[from_square];
+        while (quiet_targets) {
+            // find a target square
+            to_square = bitscan_forward(quiet_targets);
+            // add move to moves
+            movevec.emplace_back(
+                from_square,
+                to_square,
+                QUIET_MOVE_FLAG);
+            // clear the target push square for next run
+            quiet_targets &= quiet_targets - 1;
+        }
+        // generate castling moves
+        if (castling_rights) {
+            // TODO
+        }
+    }
+
+    void add_bishop_moves(std::vector<Move>& movevec) {
+        
+    }
+
+    auto pseudo_legal_moves() -> std::vector<Move> {
         std::vector<Move> moves;
         moves.reserve(32);
-        // PAWN FORWARD GENERATION
-        U64 our_pawns = our_pieces & pieces[PAWN];
-        int_fast8_t current_from_square;
-        while (our_pawns) {
-            current_from_square = bitscan_forward(our_pawns);
-        }
+        add_pawn_pushes(moves);
+        add_pawn_captures(moves);
+        add_knight_moves(moves);
+        add_king_moves(moves);
     }
 };

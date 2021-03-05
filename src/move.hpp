@@ -6,7 +6,7 @@ class Move {
     uint m_Move;  // or short or template type
 
     // first four bits are flags, next 6: from_square, last 6: to_square
-    Move(uint from, uint to, uint flags) {
+    Move(uint from, uint to, uint flags) noexcept {
         m_Move = ((flags & 0b1111) << 12) | ((from & 0b111111) << 6) | (to & 0b111111);
     }
 
@@ -48,10 +48,10 @@ class Move {
 // |------|-----------|---------|-----------|-----------|----------------------
 // | 0    | 0         | 0       | 0         | 0         | quiet moves
 // | 1    | 0         | 0       | 0         | 1         | double pawn push
-// | 2    | 0         | 0       | 1         | 0         | king castle
-// | 3    | 0         | 0       | 1         | 1         | queen castle
+// | 2    | 0         | 0       | 1         | 0         | kingside castle
+// | 3    | 0         | 0       | 1         | 1         | queenside castle
 // | 4    | 0         | 1       | 0         | 0         | captures
-// | 5    | 0         | 1       | 0         | 1         | ep-capture
+// | 5    | 0         | 1       | 0         | 1         | en-pissant-capture :(
 // | 8    | 1         | 0       | 0         | 0         | knight-promotion
 // | 9    | 1         | 0       | 0         | 1         | bishop-promotion
 // | 10   | 1         | 0       | 1         | 0         | rook-promotion
@@ -60,3 +60,4 @@ class Move {
 // | 13   | 1         | 1       | 0         | 1         | bishop-promo capture
 // | 14   | 1         | 1       | 1         | 0         | rook-promo capture
 // | 15   | 1         | 1       | 1         | 1         | queen-promo capture
+

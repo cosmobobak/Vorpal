@@ -3,7 +3,14 @@
 #include <string>
 #include <vector>
 
-#include "vorpal_move.hpp"
+#include "engine.hpp"
+#include "intrinsic_functions.hpp"
+#include "move.hpp"
+#include "movegen.hpp"
+#include "names.hpp"
+#include "rays.hpp"
+#include "state.hpp"
+#include "vorpal_bitmasks.hpp"
 
 #define INF 10000000000
 
@@ -111,8 +118,7 @@ auto col_bitmask_generator(int col) -> U64 {
     return out;
 }
 
-auto ray_bitmask_generator(int square, int dir) -> U64  // slow as hell
-{
+auto ray_bitmask_pregenerator(int square, int dir) -> U64 {
     int r = row(square);
     int c = col(square);
     int i = 1;
@@ -164,32 +170,32 @@ auto ray_bitmask_generator(int square, int dir) -> U64  // slow as hell
     return outputMask;
 }
 
-auto knight_move_generator(int square, int dir) -> U64  // slow as hell
+auto knight_move_pregenerator(int square, int dir) -> U64  // slow as hell
 {
     int offsets[] = {17, 15, 10, 6, -17, -15, -10, -6};
     int r = row(square);
     int c = col(square);
     U64 out;
     if (square + offsets[dir] >= 0 && square + offsets[dir] <= 63) {
-        out = 1LL << (square + offsets[dir]);
+        out = 1ULL << (square + offsets[dir]);
     } else {
         return 0;
     }
 
     if (r == 0 || r == 1) {
-        out &= ~(row_bitmask_generator(7) | row_bitmask_generator(6));
+        out &= ~(BB_RANK_7 | BB_RANK_8);
     } else if (r == 7 || r == 6) {
-        out &= ~(row_bitmask_generator(0) | row_bitmask_generator(1));
+        out &= ~(BB_RANK_2 | BB_RANK_1);
     }
     if (c == 0 || c == 1) {
-        out &= ~(col_bitmask_generator(7) | col_bitmask_generator(6));
+        out &= ~(BB_FILE_G | BB_FILE_H);
     } else if (c == 7 || c == 6) {
-        out &= ~(col_bitmask_generator(0) | col_bitmask_generator(1));
+        out &= ~(BB_FILE_A | BB_FILE_B);
     }
     return out;
 }
 
-auto king_move_generator(int square, int dir) -> U64  // slow as hell
+auto king_move_pregenerator(int square, int dir) -> U64  // slow as hell
 {
     int offsets[] = {9, 8, 7, 1, -9, -8, -7, -1};
     int r = row(square);
@@ -202,14 +208,14 @@ auto king_move_generator(int square, int dir) -> U64  // slow as hell
     }
 
     if (r == 0 || r == 1) {
-        out &= ~(row_bitmask_generator(7) | row_bitmask_generator(6));
+        out &= ~(BB_RANK_7 | BB_RANK_8);
     } else if (r == 7 || r == 6) {
-        out &= ~(row_bitmask_generator(0) | row_bitmask_generator(1));
+        out &= ~(BB_RANK_2 | BB_RANK_1);
     }
     if (c == 0 || c == 1) {
-        out &= ~(col_bitmask_generator(7) | col_bitmask_generator(6));
+        out &= ~(BB_FILE_G | BB_FILE_H);
     } else if (c == 7 || c == 6) {
-        out &= ~(col_bitmask_generator(0) | col_bitmask_generator(1));
+        out &= ~(BB_FILE_A | BB_FILE_B);
     }
     return out;
 }
