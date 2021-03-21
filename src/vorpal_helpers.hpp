@@ -97,25 +97,8 @@ auto index(int row, int col) -> int {
     return row * 8 + col;
 }
 
-auto set_bit(int index, U64 bitboard) -> U64 {
-    //return bitboard | M.MASK[index];
-    return bitboard | 1ULL << index;
-}
-
-auto row_bitmask_generator(int row) -> U64 {
-    U64 out = 0;
-    for (int i = 0; i < 8; i++) {
-        out = set_bit(index(row, i), out);
-    }
-    return out;
-}
-
-auto col_bitmask_generator(int col) -> U64 {
-    U64 out = 0;
-    for (int i = 0; i < 8; i++) {
-        out = set_bit(index(i, col), out);
-    }
-    return out;
+auto set_bit(int index, U64 &bitboard) -> U64 {
+    bitboard |= 1ULL << index;
 }
 
 auto ray_bitmask_pregenerator(int square, int dir) -> U64 {
@@ -126,49 +109,49 @@ auto ray_bitmask_pregenerator(int square, int dir) -> U64 {
     switch (dir) {
         case SOUTH_EAST:
             while (index(r + i, c + i) >= 0 && index(r + i, c + i) <= 63) {
-                outputMask = set_bit(index(r + i, c + i), outputMask);
+                set_bit(index(r + i, c + i), outputMask);
                 i++;
             }
             break;
         case NORTH_WEST:
             while (index(r - i, c - i) >= 0 && index(r - i, c - i) <= 63) {
-                outputMask = set_bit(index(r - i, c - i), outputMask);
+                set_bit(index(r - i, c - i), outputMask);
                 i++;
             }
             break;
         case SOUTH_WEST:
             while (index(r + i, c - i) >= 0 && index(r + i, c - i) <= 63) {
-                outputMask = set_bit(index(r + i, c - i), outputMask);
+                set_bit(index(r + i, c - i), outputMask);
                 i++;
             }
             break;
         case NORTH_EAST:
             while (index(r - i, c + i) >= 0 && index(r - i, c + i) <= 63) {
-                outputMask = set_bit(index(r - i, c + i), outputMask);
+                set_bit(index(r - i, c + i), outputMask);
                 i++;
             }
             break;
         case NORTH:
             while (index(r - i, c) >= 0 && index(r - i, c) <= 63) {
-                outputMask = set_bit(index(r - i, c), outputMask);
+                set_bit(index(r - i, c), outputMask);
                 i++;
             }
             break;
         case SOUTH:
             while (index(r + i, c) >= 0 && index(r + i, c) <= 63) {
-                outputMask = set_bit(index(r + i, c), outputMask);
+                set_bit(index(r + i, c), outputMask);
                 i++;
             }
             break;
         case WEST:
             while (index(r, c - i) >= 0 && index(r, c - i) <= 63) {
-                outputMask = set_bit(index(r, c - i), outputMask);
+                set_bit(index(r, c - i), outputMask);
                 i++;
             }
             break;
         case EAST:
             while (index(r, c + i) >= 0 && index(r, c + i) <= 63) {
-                outputMask = set_bit(index(r, c + i), outputMask);
+                set_bit(index(r, c + i), outputMask);
                 i++;
             }
             break;
