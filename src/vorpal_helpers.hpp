@@ -123,48 +123,58 @@ auto ray_bitmask_pregenerator(int square, int dir) -> U64 {
     int c = col(square);
     int i = 1;
     U64 outputMask = 0;
-    if (dir == SOUTH_EAST) {
-        while (index(r + i, c + i) >= 0 && index(r + i, c + i) <= 63) {
-            outputMask = set_bit(index(r + i, c + i), outputMask);
-            i++;
-        }
-    } else if (dir == NORTH_WEST) {
-        while (index(r - i, c - i) >= 0 && index(r - i, c - i) <= 63) {
-            outputMask = set_bit(index(r - i, c - i), outputMask);
-            i++;
-        }
-    } else if (dir == SOUTH_WEST) {
-        while (index(r + i, c - i) >= 0 && index(r + i, c - i) <= 63) {
-            outputMask = set_bit(index(r + i, c - i), outputMask);
-            i++;
-        }
-    } else if (dir == NORTH_EAST) {
-        while (index(r - i, c + i) >= 0 && index(r - i, c + i) <= 63) {
-            outputMask = set_bit(index(r - i, c + i), outputMask);
-            i++;
-        }
-    } else if (dir == NORTH) {
-        while (index(r - i, c) >= 0 && index(r - i, c) <= 63) {
-            outputMask = set_bit(index(r - i, c), outputMask);
-            i++;
-        }
-    } else if (dir == SOUTH) {
-        while (index(r + i, c) >= 0 && index(r + i, c) <= 63) {
-            outputMask = set_bit(index(r + i, c), outputMask);
-            i++;
-        }
-    } else if (dir == WEST) {
-        while (index(r, c - i) >= 0 && index(r, c - i) <= 63) {
-            outputMask = set_bit(index(r, c - i), outputMask);
-            i++;
-        }
-    } else if (dir == EAST) {
-        while (index(r, c + i) >= 0 && index(r, c + i) <= 63) {
-            outputMask = set_bit(index(r, c + i), outputMask);
-            i++;
-        }
-    } else {
-        std::cout << "error in ray_bitmask_generator";
+    switch (dir) {
+        case SOUTH_EAST:
+            while (index(r + i, c + i) >= 0 && index(r + i, c + i) <= 63) {
+                outputMask = set_bit(index(r + i, c + i), outputMask);
+                i++;
+            }
+            break;
+        case NORTH_WEST:
+            while (index(r - i, c - i) >= 0 && index(r - i, c - i) <= 63) {
+                outputMask = set_bit(index(r - i, c - i), outputMask);
+                i++;
+            }
+            break;
+        case SOUTH_WEST:
+            while (index(r + i, c - i) >= 0 && index(r + i, c - i) <= 63) {
+                outputMask = set_bit(index(r + i, c - i), outputMask);
+                i++;
+            }
+            break;
+        case NORTH_EAST:
+            while (index(r - i, c + i) >= 0 && index(r - i, c + i) <= 63) {
+                outputMask = set_bit(index(r - i, c + i), outputMask);
+                i++;
+            }
+            break;
+        case NORTH:
+            while (index(r - i, c) >= 0 && index(r - i, c) <= 63) {
+                outputMask = set_bit(index(r - i, c), outputMask);
+                i++;
+            }
+            break;
+        case SOUTH:
+            while (index(r + i, c) >= 0 && index(r + i, c) <= 63) {
+                outputMask = set_bit(index(r + i, c), outputMask);
+                i++;
+            }
+            break;
+        case WEST:
+            while (index(r, c - i) >= 0 && index(r, c - i) <= 63) {
+                outputMask = set_bit(index(r, c - i), outputMask);
+                i++;
+            }
+            break;
+        case EAST:
+            while (index(r, c + i) >= 0 && index(r, c + i) <= 63) {
+                outputMask = set_bit(index(r, c + i), outputMask);
+                i++;
+            }
+            break;
+        default:
+            std::cout << "error in ray_bitmask_generator";
+            break;
     }
 
     return outputMask;
