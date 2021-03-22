@@ -9,19 +9,11 @@
 #include "move.hpp"
 #include "movegen.hpp"
 #include "names.hpp"
-#include "rays.hpp"
 #include "state.hpp"
 
-#define INF 10000000000
+constexpr auto INF = 10000000000;
 
 using U64 = unsigned long long;
-using U32 = unsigned __int32;
-using U16 = unsigned __int16;
-using U8 = unsigned __int8;
-using S64 = signed __int64;
-using S32 = signed __int32;
-using S16 = signed __int16;
-using S8 = signed __int8;
 
 auto square_notation(Square index) -> std::string {
     // 0 => A8

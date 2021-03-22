@@ -6,7 +6,6 @@
 #include "move.hpp"
 #include "movegen.hpp"
 #include "names.hpp"
-#include "rays.hpp"
 #include "state.hpp"
 #include "vorpal_helpers.hpp"
 
