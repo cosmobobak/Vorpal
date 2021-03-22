@@ -1,9 +1,9 @@
 #pragma once
 
-#define U64 unsigned long long
+using U64 = unsigned long long;
 
 #include "names.hpp"
-#include "vorpal_helpers.hpp"
+#include "RayPregenerator.hpp"
 
 class MaskSet {
    public:
@@ -42,7 +42,7 @@ class MaskSet {
 
         for (int i = 0; i < 64; i++) {
             for (int dir = 0; dir < 8; dir++) {
-                RAYS[i][dir] = ray_bitmask_pregenerator(i, dir);
+                RAYS[i][dir] = RBP::ray_bitmask_pregenerator(i, dir);
             }
         }
 

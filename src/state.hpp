@@ -6,6 +6,7 @@
 #include "move.hpp"
 #include "movegen.hpp"
 #include "names.hpp"
+#include "MaskSet.hpp"
 
 using U64 = unsigned long long;
 
@@ -21,9 +22,9 @@ class State {
     int halfmove_clock;  // resets on captures and pawn moves
     std::vector<Move> move_stack;
 
-    U64** raymasks;
+    MaskSet* masks;
 
-    State(U64** rm) {
+    State(MaskSet* m = nullptr) {
         occupied = BB_RANK_2 | BB_RANK_7 | BB_BACKRANKS;
         occupied_co[WHITE] = BB_RANK_1 | BB_RANK_2;
         occupied_co[BLACK] = BB_RANK_7 | BB_RANK_8;
@@ -37,7 +38,11 @@ class State {
         ep_square = BB_EMPTY;
         castling_rights = BB_CORNERS;
         movecount = 0;
-        raymasks = rm;
+        if (!m) {
+            masks = new MaskSet();
+        } else {
+            masks = m;
+        }
     }
 
     /////////////////////////////////////////////////////////////
@@ -47,7 +52,9 @@ class State {
     auto set_piece_at(Square square, Piece piece, Colour colour) {
         U64 adding_bb = 1ULL << square;
         occupied |= adding_bb;
+        for (U64& bb : occupied_co) bb &= ~adding_bb;
         occupied_co[colour] |= adding_bb;
+        for (U64& bb : pieces) bb &= ~adding_bb;
         pieces[piece] |= adding_bb;
     }
 
@@ -88,9 +95,9 @@ class State {
         bool knightCheck = BB_KNIGHT_ATTACKS[ourKingLocation] & (theirPieces & pieces[KNIGHT]);
 
         // generate bitmasks for the diagonal attacks from the king
-        U64 diaglines = get_bishop_moves_c(ourKingLocation, occupied, raymasks);
+        U64 diaglines = get_bishop_moves_c(ourKingLocation, occupied, masks);
         // generate bitmasks for the rank & file attacks from the king
-        U64 straightlines = get_rook_moves_c(ourKingLocation, occupied, raymasks);
+        U64 straightlines = get_rook_moves_c(ourKingLocation, occupied, masks);
 
         bool bishopCheck = diaglines & (theirPieces & pieces[BISHOP]);
         bool rookCheck = straightlines & (theirPieces & pieces[ROOK]);
@@ -153,9 +160,9 @@ class State {
         U64 our_pieces = occupied_co[turn];
         U64 our_pawns = our_pieces & pieces[PAWN];
         // the square that a move originates from
-        uint_fast8_t from_square;
+        Square from_square;
         // the square that a move targets
-        uint_fast8_t to_square;
+        Square to_square;
         // the opponent's pieces
         U64 targets;
         // generate pawn pushes
@@ -163,7 +170,7 @@ class State {
             // find the current moved piece
             from_square = bitscan_forward(our_pawns);
             // find the intersection of legal pawn pushes and empty squares
-            targets = ~occupied & BB_PAWN_FORWARD[turn][from_square];
+            targets = ~occupied & (masks->PAWN_MOVES[turn][from_square]);
             while (targets) {
                 // find a target square
                 to_square = bitscan_forward(targets);

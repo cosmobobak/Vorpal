@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "MaskSet.hpp"
 #include "engine.hpp"
 #include "intrinsic_functions.hpp"
 #include "move.hpp"
@@ -10,18 +11,17 @@
 #include "names.hpp"
 #include "rays.hpp"
 #include "state.hpp"
-#include "vorpal_bitmasks.hpp"
 
 #define INF 10000000000
 
-#define U64 unsigned long long
-#define U32 unsigned __int32
-#define U16 unsigned __int16
-#define U8 unsigned __int8
-#define S64 signed __int64
-#define S32 signed __int32
-#define S16 signed __int16
-#define S8 signed __int8
+using U64 = unsigned long long;
+using U32 = unsigned __int32;
+using U16 = unsigned __int16;
+using U8 = unsigned __int8;
+using S64 = signed __int64;
+using S32 = signed __int32;
+using S16 = signed __int16;
+using S8 = signed __int8;
 
 auto square_notation(Square index) -> std::string {
     // 0 => A8
@@ -80,76 +80,4 @@ auto string(U64 bitboard) -> std::string {
         }
     }
     return builder;
-}
-
-auto row(int index) -> int {
-    return index / 8;
-}
-
-auto col(int index) -> int {
-    return index % 8;
-}
-
-auto index(int row, int col) -> int {
-    if (row > 7 || col > 7 || row < 0 || col < 0) {
-        return 64;
-    }
-    return row * 8 + col;
-}
-
-auto set_bit(int index, U64 &bitboard) -> U64 {
-    bitboard |= 1ULL << index;
-}
-
-auto ray_bitmask_pregenerator(int square, int dir) -> U64 {
-    int r = row(square);
-    int c = col(square);
-    U64 outputMask = 0;
-    switch (dir) {
-        case SOUTH_EAST:
-            for (int i = 1; index(r + i, c + i) >= 0 && index(r + i, c + i) <= 63; i++) {
-                set_bit(index(r + i, c + i), outputMask);
-            }
-            break;
-        case NORTH_WEST:
-            for (int i = 1; index(r - i, c - i) >= 0 && index(r - i, c - i) <= 63; i++) {
-                set_bit(index(r - i, c - i), outputMask);
-            }
-            break;
-        case SOUTH_WEST:
-            for (int i = 1; index(r + i, c - i) >= 0 && index(r + i, c - i) <= 63; i++) {
-                set_bit(index(r + i, c - i), outputMask);
-            }
-            break;
-        case NORTH_EAST:
-            for (int i = 1; index(r - i, c + i) >= 0 && index(r - i, c + i) <= 63; i++) {
-                set_bit(index(r - i, c + i), outputMask);
-            }
-            break;
-        case NORTH:
-            for (int i = 1; index(r - i, c) >= 0 && index(r - i, c) <= 63; i++) {
-                set_bit(index(r - i, c), outputMask);
-            }
-            break;
-        case SOUTH:
-            for (int i = 1; index(r + i, c) >= 0 && index(r + i, c) <= 63; i++) {
-                set_bit(index(r + i, c), outputMask);
-            }
-            break;
-        case WEST:
-            for (int i = 1; index(r, c - i) >= 0 && index(r, c - i) <= 63; i++) {
-                set_bit(index(r, c - i), outputMask);
-            }
-            break;
-        case EAST:
-            for (int i = 1; index(r, c + i) >= 0 && index(r, c + i) <= 63; i++) {
-                set_bit(index(r, c + i), outputMask);
-            }
-            break;
-        default:
-            std::cout << "error in ray_bitmask_generator";
-            break;
-    }
-
-    return outputMask;
 }

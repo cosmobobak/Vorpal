@@ -9,7 +9,7 @@ using uint = unsigned int;
 const char pieces[13] = {'p', 'n', 'b', 'r', 'q', 'k', 'P', 'N', 'B', 'R', 'Q', 'K', '.'};
 const std::string pieceNames[13] = {"blackPawn", "blackKnight", "blackBishop", "blackRook", "blackQueen", "blackKing", "whitePawn", "whiteKnight", "whiteBishop", "whiteRook", "whiteQueen", "whiteKing", "emptySquare"};
 
-enum Piece {
+enum Piece : uint8_t {
     PAWN,
     KNIGHT,
     BISHOP,
@@ -19,7 +19,7 @@ enum Piece {
     NO_PIECE
 };
 
-enum Square {
+enum Square : uint8_t {
     A1, A2, A3, A4, A5, A6, A7, A8,
     B1, B2, B3, B4, B5, B6, B7, B8,
     C1, C2, C3, C4, C5, C6, C7, C8,
@@ -32,7 +32,7 @@ enum Square {
     SquareLast = H8
 };
 
-enum Direction {
+enum Direction : uint8_t {
     SOUTH_EAST,
     SOUTH,
     SOUTH_WEST,

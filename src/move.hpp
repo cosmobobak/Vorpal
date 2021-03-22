@@ -6,7 +6,7 @@ class Move {
     uint m_Move;  // or short or template type
 
     // first four bits are flags, next 6: from_square, last 6: to_square
-    Move(uint from, uint to, uint flags) noexcept {
+    Move(Square from, Square to, uint flags) noexcept {
         m_Move = ((flags & 0b1111) << 12) | ((from & 0b111111) << 6) | (to & 0b111111);
     }
 
